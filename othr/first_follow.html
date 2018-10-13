@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head><title>First and Follow Table GTK</title><meta charset="utf-8"></head>
+<body style="background-color:#DEE0DE;">
+<h1 align="center">
+<font color = '#080808' size = '7' face = 'Times New Roman'>GTK - Grammar Tool Kit 0.8</font><br> <font size = '6' color = '#494A49'> First And Follow Sets </font>
+</h1>
+<center><table style="width:50%" border="3">
+<tr>
+<th BGCOLOR = #858785> <font size = '4' color = '##030303'> Variable </font></th>
+<th BGCOLOR = #858785><font size = '4' color = '#030303'> First Set </font></th>
+<th BGCOLOR = #858785><font size = '4' color = '#030303'> Follow Set </font></th>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltfunction&gt</td><td BGCOLOR = #F9F8F8>float			int			</td>
+<td BGCOLOR = #F9F8F8>$			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltargList&gt</td><td BGCOLOR = #F9F8F8>&lambda;			float			int			</td>
+<td BGCOLOR = #F9F8F8>)			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltarg&gt</td><td BGCOLOR = #F9F8F8>float			int			</td>
+<td BGCOLOR = #F9F8F8>)			,			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltrestoArgList&gt</td><td BGCOLOR = #F9F8F8>&lambda;			,			</td>
+<td BGCOLOR = #F9F8F8>)			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&lttype&gt</td><td BGCOLOR = #F9F8F8>float			int			</td>
+<td BGCOLOR = #F9F8F8>IDENT			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltbloco&gt</td><td BGCOLOR = #F9F8F8>{			</td>
+<td BGCOLOR = #F9F8F8>!			$			(			+			-			;			IDENT			NUMfloat			NUMint			break			continue			else			float			for			if			int			print			scan			while			{			}			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltstmtList&gt</td><td BGCOLOR = #F9F8F8>!			&lambda;			(			+			-			;			IDENT			NUMfloat			NUMint			break			continue			float			for			if			int			print			scan			while			{			</td>
+<td BGCOLOR = #F9F8F8>}			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltstmt&gt</td><td BGCOLOR = #F9F8F8>!			(			+			-			;			IDENT			NUMfloat			NUMint			break			continue			float			for			if			int			print			scan			while			{			</td>
+<td BGCOLOR = #F9F8F8>!			(			+			-			;			IDENT			NUMfloat			NUMint			break			continue			else			float			for			if			int			print			scan			while			{			}			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltdeclaration&gt</td><td BGCOLOR = #F9F8F8>float			int			</td>
+<td BGCOLOR = #F9F8F8>!			(			+			-			;			IDENT			NUMfloat			NUMint			break			continue			else			float			for			if			int			print			scan			while			{			}			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltidentList&gt</td><td BGCOLOR = #F9F8F8>IDENT			</td>
+<td BGCOLOR = #F9F8F8>;			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltrestoIdentList&gt</td><td BGCOLOR = #F9F8F8>&lambda;			,			</td>
+<td BGCOLOR = #F9F8F8>;			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltforStmt&gt</td><td BGCOLOR = #F9F8F8>for			</td>
+<td BGCOLOR = #F9F8F8>!			(			+			-			;			IDENT			NUMfloat			NUMint			break			continue			else			float			for			if			int			print			scan			while			{			}			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltoptExpr&gt</td><td BGCOLOR = #F9F8F8>!			&lambda;			(			+			-			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>)			;			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltioStmt&gt</td><td BGCOLOR = #F9F8F8>print			scan			</td>
+<td BGCOLOR = #F9F8F8>!			(			+			-			;			IDENT			NUMfloat			NUMint			break			continue			else			float			for			if			int			print			scan			while			{			}			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltoutList&gt</td><td BGCOLOR = #F9F8F8>IDENT			NUMfloat			NUMint			STR			</td>
+<td BGCOLOR = #F9F8F8>)			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltout&gt</td><td BGCOLOR = #F9F8F8>IDENT			NUMfloat			NUMint			STR			</td>
+<td BGCOLOR = #F9F8F8>)			,			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltrestoOutList&gt</td><td BGCOLOR = #F9F8F8>&lambda;			,			</td>
+<td BGCOLOR = #F9F8F8>)			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltwhileStmt&gt</td><td BGCOLOR = #F9F8F8>while			</td>
+<td BGCOLOR = #F9F8F8>!			(			+			-			;			IDENT			NUMfloat			NUMint			break			continue			else			float			for			if			int			print			scan			while			{			}			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltifStmt&gt</td><td BGCOLOR = #F9F8F8>if			</td>
+<td BGCOLOR = #F9F8F8>!			(			+			-			;			IDENT			NUMfloat			NUMint			break			continue			else			float			for			if			int			print			scan			while			{			}			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltelsePart&gt</td><td BGCOLOR = #F9F8F8>&lambda;			else			</td>
+<td BGCOLOR = #F9F8F8>!			(			+			-			;			IDENT			NUMfloat			NUMint			break			continue			else			float			for			if			int			print			scan			while			{			}			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltexpr&gt</td><td BGCOLOR = #F9F8F8>!			(			+			-			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>)			;			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltatrib&gt</td><td BGCOLOR = #F9F8F8>!			(			+			-			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>)			;			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltrestoAtrib&gt</td><td BGCOLOR = #F9F8F8>&lambda;			=			</td>
+<td BGCOLOR = #F9F8F8>)			;			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltor&gt</td><td BGCOLOR = #F9F8F8>!			(			+			-			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>)			;			=			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltrestoOr&gt</td><td BGCOLOR = #F9F8F8>&lambda;			||			</td>
+<td BGCOLOR = #F9F8F8>)			;			=			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltand&gt</td><td BGCOLOR = #F9F8F8>!			(			+			-			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>)			;			=			||			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltrestoAnd&gt</td><td BGCOLOR = #F9F8F8>&&			&lambda;			</td>
+<td BGCOLOR = #F9F8F8>)			;			=			||			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltnot&gt</td><td BGCOLOR = #F9F8F8>!			(			+			-			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>&&			)			;			=			||			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltrel&gt</td><td BGCOLOR = #F9F8F8>(			+			-			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>&&			)			;			=			||			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltrestoRel&gt</td><td BGCOLOR = #F9F8F8>!=			&lambda;			<			<=			==			>			>=			</td>
+<td BGCOLOR = #F9F8F8>&&			)			;			=			||			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltadd&gt</td><td BGCOLOR = #F9F8F8>(			+			-			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>!=			&&			)			;			<			<=			=			==			>			>=			||			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltrestoAdd&gt</td><td BGCOLOR = #F9F8F8>&lambda;			+			-			</td>
+<td BGCOLOR = #F9F8F8>!=			&&			)			;			<			<=			=			==			>			>=			||			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltmult&gt</td><td BGCOLOR = #F9F8F8>(			+			-			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>!=			&&			)			+			-			;			<			<=			=			==			>			>=			||			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltrestoMult&gt</td><td BGCOLOR = #F9F8F8>%			&lambda;			*			/			</td>
+<td BGCOLOR = #F9F8F8>!=			&&			)			+			-			;			<			<=			=			==			>			>=			||			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltuno&gt</td><td BGCOLOR = #F9F8F8>(			+			-			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>!=			%			&&			)			*			+			-			/			;			<			<=			=			==			>			>=			||			</td>
+</tr>
+<tr>
+<td BGCOLOR = #D8D8D8>&ltfator&gt</td><td BGCOLOR = #F9F8F8>(			IDENT			NUMfloat			NUMint			</td>
+<td BGCOLOR = #F9F8F8>!=			%			&&			)			*			+			-			/			;			<			<=			=			==			>			>=			||			</td>
+</tr>
+</table>
+<br><font size = '3' face="verdana" color = '#9a0000'><br>[Cuidado] Foi encontrada uma intercesão entre o conjunto first e follow da variável &ltelsePart&gt. Terminais: ['else']</font><br>_______________________________________________________________________________________________________________</center><footer  text-align: "center" >
+<p align = "center"><font size = '2' face="verdana" color = '#080808'> IFMG - Instituto Federal de Educação e Tecnologia - Campus Formiga </font></p>
+<p align = "center"><font size = '2' face="verdana" color = '#080808'> Trabalho de conclusão de curso </font></p>
+<p align = "center"><font size = '2' face="verdana" color = '#080808'> Autor: Leandro Vagner Arcebispo Ferreira [leandrobispoferreira@gmail.com] </font></p>
+<p align = "center"><font size = '2' face="verdana" color = '#080808'> Orientador: Walace Rodrigues </font></p>
+</footer>
+</body>
+</html>
+</body>
+</html>

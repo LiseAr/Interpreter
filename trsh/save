@@ -1,0 +1,579 @@
+    current_state = TD.st_INIT
+    curr_tok.id = TokD.NONE
+    curr_tok.name = ''
+
+    line = file.line
+
+    if line == '':
+        line = file.readline()
+    if line == '':
+        curr_tok.id = TokD.EOF
+        curr_tok.name = 'EOF'
+        return curr_tok
+
+    while line != '':
+        print(line)
+        previous_state = current_state
+        print(previous_state)
+        sym = symb_type(line[0])
+        print(sym)
+        current_state = TD().next_state(sym, current_state)
+        print(current_state)
+
+        # Constroi nome, incrementa coluna, incrementa linha
+        if current_state not in [TD.st_INIT, TD.st_ERR, TD.st_FIN]:
+
+            if (current_state != TD.st_OPER2) or \
+                ((current_state == TD.st_OPER2) and
+                    ((curr_tok.name+line[0]) in TokD().t)):
+                    curr_tok.col += 1
+                    curr_tok.name = curr_tok.name + line[0]
+                    line = line[1:]
+                    if line == '':
+                        line = ' '
+            else:
+                current_state = TD.st_FIN
+
+        # Aribui ID e retorna Token
+        if current_state == TD.st_FIN:
+            if previous_state in [TD.st_LET, TD.st_OPER, TD.st_OPER2]:
+                if curr_tok.name in TokD().t:
+                    curr_tok.id = TokD().t[curr_tok.name]
+                elif line[0] == '(':
+                    curr_tok.id = TokD.FUNCTION
+                else:
+                    curr_tok.id = TokD.IDENT
+            elif previous_state in [TD.st_NUM, TD.st_PTDEC]:
+                curr_tok.id = TokD.NUM
+            elif previous_state in [TD.st_STR, TD.st_ENDSTR]:
+                curr_tok.id = TokD.STR
+            file.line = line
+            return curr_tok
+
+        # Trata \n, \t, ' '
+        elif current_state == TD.st_INIT:
+            if sym in [TD.sy_BKL, TD.sy_CMT]:
+                curr_tok.row += 1
+                curr_tok.col = 1
+                line = file.readline()
+            elif sym == TD.sy_EMPTY:
+                curr_tok.col += 1
+                line = line[1:]
+
+        # Retorna Token de Erro em caso de Erro
+        elif current_state == TD.st_ERR:
+            line = line[1:]
+            current_state = TD.st_INIT
+            curr_tok.name = ''
+
+    if line == '':
+        line = file.readline()
+    if line == '':
+        curr_tok.id = TokD.EOF
+        curr_tok.name = 'EOF'
+        return curr_tok
+
+
+======================================================
+
+========================================================
+
+        from enum import auto, Enum
+from c_token import Token, TokenType
+
+
+_ERROR_MSG = 'Lexer error: line {}, column {}: {}'
+
+
+class File:
+    def __init__(self, file_name):
+        self.file_name = file_name
+        self.line = ''
+        self.fd = open(file_name, 'r')
+
+    def readline(self):
+        self.line = self.fd.readline()
+        return self.line
+
+    def close(self):  # TODO: close automatically
+        self.fd.close()
+
+
+class State(Enum):
+    INIT = auto()
+    LET = auto()
+    NUM = auto()
+    NUMPT = auto()
+    PTDEC = auto()
+    STR = auto()
+    ENDSTR = auto()
+    OPER = auto()
+    OPER2 = auto()
+    FIN = auto()
+    ERR = auto()
+
+
+class Symbol(Enum):
+    LET = auto()
+    NUM = auto()
+    OPER = auto()
+    INV = auto()
+    PTO = auto()
+    QMK = auto()  # Quotation Mark
+    BKL = auto()  # Break Line
+    EMPTY = auto()
+    CMT = auto()
+
+
+def symb_type(char):
+
+    if char in {'+', '-', '%', '*', '=', '(', ')', ',', ';', '{',
+                '}', '!', '/', '>', '<', '|', '&'}:
+        return Symbol.OPER
+    elif char == '.':
+        return Symbol.PTO
+    elif char == '\n':
+        return Symbol.BKL
+    elif char in {' ', '\t'}:
+        return Symbol.EMPTY
+    elif char == '"':
+        return Symbol.QMK
+    elif char == '#':
+        return Symbol.CMT
+    elif 'a' <= char.lower() <= 'z':
+        return Symbol.LET
+    elif '0' <= char <= '9':
+        return Symbol.NUM
+
+    return Symbol.INV
+
+
+TRANSITIONS = {
+    State.INIT: {Symbol.LET: State.LET,
+                 Symbol.NUM: State.NUM,
+                 Symbol.PTO: State.NUM,
+                 Symbol.OPER: State.OPER,
+                 Symbol.EMPTY: State.INIT,
+                 Symbol.BKL: State.INIT,
+                 Symbol.QMK: State.STR,
+                 Symbol.INV: State.ERR,
+                 Symbol.CMT: State.INIT},
+
+    # nesse estado se constroi identificadores e palavras reservadas
+    State.LET: {Symbol.LET: State.LET,
+                Symbol.NUM: State.LET,
+                Symbol.OPER: State.FIN,
+                Symbol.EMPTY: State.FIN,
+                Symbol.BKL: State.FIN,
+                Symbol.QMK: State.FIN,
+                Symbol.INV: State.ERR,
+                Symbol.PTO: State.ERR},
+
+    State.NUM: {Symbol.LET: State.ERR,
+                Symbol.NUM: State.NUM,
+                Symbol.OPER: State.FIN,
+                Symbol.EMPTY: State.FIN,
+                Symbol.BKL: State.FIN,
+                Symbol.QMK: State.FIN,
+                Symbol.INV: State.ERR,
+                Symbol.PTO: State.NUMPT},
+
+    State.NUMPT: {Symbol.LET: State.ERR,
+                  Symbol.NUM: State.PTDEC,
+                  Symbol.OPER: State.ERR,
+                  Symbol.EMPTY: State.ERR,
+                  Symbol.BKL: State.ERR,
+                  Symbol.QMK: State.ERR,
+                  Symbol.INV: State.ERR,
+                  Symbol.PTO: State.ERR},
+
+    State.PTDEC: {Symbol.LET: State.ERR,
+                  Symbol.NUM: State.PTDEC,
+                  Symbol.OPER: State.FIN,
+                  Symbol.EMPTY: State.FIN,
+                  Symbol.BKL: State.FIN,
+                  Symbol.QMK: State.FIN,
+                  Symbol.INV: State.ERR,
+                  Symbol.PTO: State.ERR},
+
+    State.STR: {Symbol.LET: State.STR,
+                Symbol.NUM: State.STR,
+                Symbol.OPER: State.STR,
+                Symbol.EMPTY: State.STR,
+                Symbol.BKL: State.STR,
+                Symbol.QMK: State.ENDSTR,
+                Symbol.INV: State.STR,
+                Symbol.PTO: State.STR},
+
+    State.OPER: {Symbol.LET: State.FIN,
+                 Symbol.NUM: State.FIN,
+                 Symbol.OPER: State.OPER2,
+                 Symbol.EMPTY: State.FIN,
+                 Symbol.BKL: State.FIN,
+                 Symbol.QMK: State.FIN,
+                 Symbol.INV: State.ERR,
+                 Symbol.PTO: State.FIN},  # pode ser um num na forma .3
+
+    State.OPER2: {Symbol.LET: State.FIN,
+                  Symbol.NUM: State.FIN,
+                  Symbol.OPER: State.FIN,
+                  Symbol.EMPTY: State.FIN,
+                  Symbol.BKL: State.FIN,
+                  Symbol.QMK: State.FIN,
+                  Symbol.INV: State.ERR,
+                  Symbol.PTO: State.ERR},
+
+    State.ENDSTR: {Symbol.LET: State.FIN,
+                   Symbol.NUM: State.FIN,
+                   Symbol.OPER: State.FIN,
+                   Symbol.EMPTY: State.FIN,
+                   Symbol.BKL: State.FIN,
+                   Symbol.QMK: State.FIN,
+                   Symbol.INV: State.FIN,
+                   Symbol.PTO: State.FIN}
+}
+
+
+class Lexer:
+    def __init__(self, fname: str):
+        self._file = File(fname)
+        self.row = 1
+        self.col = 1
+        self.buffer = ''
+
+    def get_token(self):
+
+        current_state = State.INIT
+        self.buffer = ''
+        line = self._file.line
+        if line == '':
+                line = self._file.readline()
+
+        while line != '':
+            previous_state = current_state
+            sym = symb_type(line[0])
+            current_state = TRANSITIONS[previous_state][sym]
+
+            # Constroi nome, incrementa coluna, incrementa linha
+            if current_state not in {State.INIT, State.ERR, State.FIN}:
+
+                if (current_state != State.OPER2 or
+                        Token.get_token_type(self.buffer + line[0])
+                        is not None):
+                        
+                    self.col += 1  # TODO: use mutable string
+                    self.buffer = self.buffer + line[0]
+                    line = line[1:]
+                    if line == '':
+                        line = ' '
+                else:
+                    current_state = State.FIN
+
+            # Aribui ID e retorna Token
+            if current_state == State.FIN:
+                token_id = None
+                if previous_state in {State.LET, State.OPER, State.OPER2}:
+                    token_id = Token.get_token_type(self.buffer)
+                    if token_id is None:
+                        token_id = TokenType.IDENT
+                elif previous_state is State.NUM:
+                    token_id = TokenType.NUMINT
+                elif previous_state is State.PTDEC:
+                    token_id = TokenType.NUMFLOAT
+                elif previous_state in {State.STR, State.ENDSTR}:
+                    token_id = TokenType.STR
+                self._file.line = line
+                return Token(self.row, self.col - len(self.buffer),
+                             self.buffer, token_id)
+
+            # Trata \n, \t, ' '
+            elif current_state == State.INIT:
+                if sym in {Symbol.BKL, Symbol.CMT}:
+                    self.row += 1
+                    self.col = 1
+                    line = self._file.readline()
+                elif sym == Symbol.EMPTY:
+                    self.col += 1
+                    line = line[1:]
+
+            # Retorna Token de Erro em caso de Erro
+            elif current_state == State.ERR:
+                raise Exception(str.format(_ERROR_MSG, self.row, self.col,
+                                           f'Invalid character {self.buffer}'))
+
+            if line == '':
+                line = self._file.readline()
+
+        self._file.close()
+        return Token(self.row, self.col, 'EOF', TokenType.EOF)
+
+
+-------------------------------------------------------------------------
+
+from enum import auto, Enum
+from c_token import Token, TokenType
+
+
+_ERROR_MSG = 'Lexer error: line {}, column {}: {}'
+
+
+class File:
+    def __init__(self, file_name):
+        self.file_name = file_name
+        self.line = ''
+        self.fd = open(file_name, 'r')
+
+    def readline(self):
+        self.line = self.fd.readline()
+        return self.line
+
+    def close(self):  # TODO: close automatically
+        self.fd.close()
+
+
+class State(Enum):
+    INIT = auto()
+    LET = auto()
+    NUM = auto()
+    NUMPTO = auto()
+    PTONUM = auto()
+    STR = auto()
+    ENDSTR = auto()
+    OPER = auto()
+    OPER2 = auto()
+    FIN = auto()
+    ERR = auto()
+    CMTB = auto()  # Comment Block
+    SLSH = auto()  # Slash
+
+
+class Symbol(Enum):
+    LET = auto()
+    NUM = auto()
+    OPER = auto()
+    INV = auto()
+    PTO = auto()
+    QMK = auto()  # Quotation Mark
+    BKL = auto()  # Break Line
+    SPACE = auto()
+    UNDLN = auto()  # Underline
+    SLSH = auto()  # Slash
+    ASTK = auto()  # Asterisk
+
+
+def symb_type(char):
+
+    if char in {'+', '%', '=', '(', ')', ',', ';', '{',
+                '}', '!', '>', '<', '|', '&', '-'}:
+        return Symbol.OPER
+    elif char == '_':
+        return Symbol.UNDLN
+    elif char == '/':
+        return Symbol.SLSH
+    elif char == '*':
+        return Symbol.ASTK
+    elif char == '.':
+        return Symbol.PTO
+    elif char == '\n':
+        return Symbol.BKL
+    elif char in {' ', '\t'}:
+        return Symbol.SPACE
+    elif char == '"':
+        return Symbol.QMK
+    elif 'a' <= char.lower() <= 'z':
+        return Symbol.LET
+    elif '0' <= char <= '9':
+        return Symbol.NUM
+
+    return Symbol.INV
+
+
+TRANSITIONS = {
+    State.INIT: {Symbol.LET: State.LET,
+                 Symbol.UNDLN: State.LET,
+                 Symbol.NUM: State.NUM,
+                 Symbol.PTO: State.NUMPTO,
+                 Symbol.OPER: State.OPER,
+                 Symbol.ASTK: State.OPER,
+                 Symbol.SPACE: State.INIT,
+                 Symbol.BKL: State.INIT,
+                 Symbol.QMK: State.STR,
+                 Symbol.INV: State.ERR,
+                 Symbol.SLSH: State.SLSH},
+
+    # nesse estado se constroi identificadores e palavras reservadas
+    State.LET: {Symbol.LET: State.LET,
+                Symbol.NUM: State.LET,
+                Symbol.UNDLN: State.LET,
+                Symbol.OPER: State.FIN,
+                Symbol.SPACE: State.FIN,
+                Symbol.BKL: State.FIN,
+                Symbol.QMK: State.FIN,
+                # Symbol.INV: State.ERR,
+                Symbol.PTO: State.ERR,
+                Symbol.SLSH: State.FIN,
+                Symbol.ASTK: State.FIN},
+
+
+    State.NUM: {Symbol.LET: State.FIN,
+                Symbol.NUM: State.NUM,
+                Symbol.OPER: State.FIN,
+                Symbol.SPACE: State.FIN,
+                Symbol.BKL: State.FIN,
+                Symbol.QMK: State.FIN,
+                # Symbol.INV: State.ERR,
+                Symbol.PTO: State.NUMPTO,
+                Symbol.SLSH: State.FIN,
+                Symbol.ASTK: State.FIN,
+                Symbol.UNDLN: State.FIN},
+
+    State.NUMPTO: {Symbol.LET: State.ERR,
+                  Symbol.NUM: State.PTONUM,
+                  Symbol.OPER: State.ERR,
+                  Symbol.SPACE: State.ERR,
+                  Symbol.BKL: State.ERR,
+                  Symbol.QMK: State.ERR,
+                  Symbol.INV: State.ERR,
+                  Symbol.PTO: State.ERR,
+                  Symbol.SLSH: State.ERR,
+                  Symbol.ASTK: State.ERR,
+                  Symbol.UNDLN: State.ERR},
+
+    State.PTONUM: {Symbol.LET: State.FIN,
+                   Symbol.NUM: State.PTONUM,
+                   Symbol.OPER: State.FIN,
+                   Symbol.SPACE: State.FIN,
+                   Symbol.BKL: State.FIN,
+                   Symbol.QMK: State.FIN,
+                   # Symbol.INV: State.ERR,
+                   Symbol.PTO: State.FIN,
+                   Symbol.SLSH: State.FIN,
+                   Symbol.ASTK: State.FIN,
+                   Symbol.UNDLN: State.FIN},
+
+    State.STR: {Symbol.LET: State.STR,
+                Symbol.NUM: State.STR,
+                Symbol.OPER: State.STR,
+                Symbol.SPACE: State.STR,
+                Symbol.BKL: State.STR,
+                Symbol.QMK: State.ENDSTR,
+                Symbol.INV: State.STR,
+                Symbol.PTO: State.STR,
+                Symbol.SLSH: State.FIN,
+                Symbol.ASTK: State.FIN,
+                Symbol.UNDLN: State.FIN},
+
+    State.SLSH: {Symbol.LET: State.FIN,
+                 Symbol.UNDLN: State.FIN,
+                 Symbol.NUM: State.FIN,
+                 Symbol.PTO: State.FIN,
+                 Symbol.OPER: State.FIN,
+                 Symbol.ASTK: State.CMTB,
+                 Symbol.SPACE: State.FIN,
+                 Symbol.BKL: State.FIN,
+                 Symbol.QMK: State.FIN,
+                 Symbol.INV: State.FIN,
+                 Symbol.SLSH: State.INIT},
+
+    State.OPER: {Symbol.LET: State.FIN,
+                 Symbol.NUM: State.FIN,
+                 Symbol.OPER: State.OPER2,
+                 Symbol.SPACE: State.FIN,
+                 Symbol.BKL: State.FIN,
+                 Symbol.QMK: State.FIN,
+                 Symbol.INV: State.ERR,
+                 Symbol.PTO: State.FIN,  # pode ser um num na forma .3
+                 Symbol.SLSH: State.FIN,
+                 Symbol.ASTK: State.FIN,
+                 Symbol.UNDLN: State.FIN},
+
+    State.OPER2: {Symbol.LET: State.FIN,
+                  Symbol.NUM: State.FIN,
+                  Symbol.OPER: State.FIN,
+                  Symbol.SPACE: State.FIN,
+                  Symbol.BKL: State.FIN,
+                  Symbol.QMK: State.FIN,
+                  Symbol.INV: State.ERR,
+                  Symbol.PTO: State.FIN,
+                  Symbol.SLSH: State.FIN,
+                  Symbol.ASTK: State.FIN,
+                  Symbol.UNDLN: State.FIN},
+
+    State.ENDSTR: {Symbol.LET: State.FIN,
+                   Symbol.NUM: State.FIN,
+                   Symbol.OPER: State.FIN,
+                   Symbol.SPACE: State.FIN,
+                   Symbol.BKL: State.FIN,
+                   Symbol.QMK: State.FIN,
+                   Symbol.INV: State.FIN,
+                   Symbol.PTO: State.FIN,
+                   Symbol.SLSH: State.FIN,
+                   Symbol.ASTK: State.FIN,
+                   Symbol.UNDLN: State.FIN}
+}
+
+
+class Lexer:
+    def __init__(self, fname: str):
+        self._file = File(fname)
+        self.row = 1
+        self.col = 1
+        self.buffer = ''
+
+    def get_token(self):
+
+        if self._file.line == '':
+            line = self._file.readline()
+        else:
+            line = self._file.line
+
+        current_state = State.INIT
+
+        while True:
+            symb = symb_type(line[0])
+            previous_state = current_state
+            current_state = TRANSITIONS[previous_state][symb]
+
+            if current_state is not {State.INIT, State.FIN, State.ERR}:
+
+                if current_state == State.CMTB:
+                    while line.find('*/') == -1:
+                        line = self._file.readline()
+                    line = self._file.readline()
+                    self.buffer = ''
+                    previous_state = current_state = State.INIT
+                elif current_state != State.OPER2 or \
+                        Token.get_token_type(self.buffer+line[0]) is not None:
+                    self.buffer = self.buffer + line[0]
+                    line = line[1:]
+                    self.col += 1
+                else:
+                    current_state == State.FIN
+
+            if current_state == State.INIT:
+                # TODO verificar se line = ''
+                if symb == Symbol.SPACE:
+                    line = line[1:]
+                    self.col += 1
+                elif symb == Symbol.BKL or previous_state == State.SLSH:
+                    line = self._file.readline()
+                    self.row += 1
+                if line == '':
+                    line = self._file.readline()
+
+            elif current_state == State.FIN:
+                token_id = None
+                if previous_state in {State.LET, State.OPER, State.OPER2,
+                                      State.SLSH}:
+                    token_id = Token.get_token_type(self.buffer)
+                    if token_id is None:
+                        token_id = TokenType.IDENT
+                elif previous_state is State.NUM:
+                    token_id = TokenType.NUMINT
+                elif previous_state is State.PTNUM:
+                    token_id = TokenType.NUMFLOAT
+                elif previous_state in {State.STR, State.ENDSTR}:
+                    token_id = TokenType.STR
+                self._file.line = line
+                return Token(self.row, self.col - len(self.buffer),
+                             self.buffer, token_id)
