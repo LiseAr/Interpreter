@@ -9,10 +9,12 @@ class Parser:
 
     def function(self):
         self.curr_token = self.lexer.get_token()
-        #print(self.curr_token)
-        #while self.curr_token.id != TokenType.EOF:
-        #    self.curr_token = self.lexer.get_token()
-        #    print(self.curr_token)
+        '''
+        print(self.curr_token)
+        while self.curr_token.id != TokenType.EOF:
+           self.curr_token = self.lexer.get_token()
+           print(self.curr_token)
+        '''
         self.type()
         self.consome(TokenType.IDENT)
         self.consome(TokenType.OPAR)
@@ -36,10 +38,7 @@ class Parser:
             self.arg_list()
 
     def type(self):
-        if self.curr_token.id == TokenType.INT:
-            self.consome(TokenType.INT)
-        elif self.curr_token.id == TokenType.FLOAT:
-            self.consome(TokenType.FLOAT)
+        self.consome(self.curr_token.id)
 
     def bloco(self):
         self.consome(TokenType.OBRKT)
@@ -47,13 +46,22 @@ class Parser:
         self.consome(TokenType.CBRKT)
 
     def stmt_list(self):
-        self.stmt()
-        self.stmt_list()
+        if self.curr_token.id in {TokenType.NOT, TokenType.OPAR,
+                                  TokenType.PLUS, TokenType.SUB,
+                                  TokenType.SEMICOLON, TokenType.IDENT,
+                                  TokenType.NUMFLOAT, TokenType.NUMINT,
+                                  TokenType.BREAK, TokenType.CONTINUE,
+                                  TokenType.FLOAT, TokenType.FOR,
+                                  TokenType.IF, TokenType.INT, TokenType.PRINT,
+                                  TokenType.SCAN, TokenType.WHILE,
+                                  TokenType.OBRKT}:
+            self.stmt()
+            self.stmt_list()
 
     def stmt(self):
         if self.curr_token.id == TokenType.FOR:
             self.for_stmt()
-        elif self.curr_token.id in [TokenType.SCAN, TokenType.PRINT]:
+        elif self.curr_token.id in {TokenType.SCAN, TokenType.PRINT}:
             self.io_stmt()
         elif self.curr_token.id == TokenType.WHILE:
             self.while_stmt()
@@ -65,11 +73,14 @@ class Parser:
             self.consome(TokenType.BREAK)
         elif self.curr_token.id == 'continue':
             self.consome(TokenType.CONTINUE)
-        elif self.curr_token.id in [TokenType.INT, TokenType.FLOAT]:
+        elif self.curr_token.id in {TokenType.INT, TokenType.FLOAT}:
             self.declaration()
         elif self.curr_token.id == TokenType.SEMICOLON:
             self.consome(TokenType.SEMICOLON)
-        else:
+        elif self.curr_token.id in {TokenType.NOT, TokenType.OPAR,
+                                    TokenType.PLUS, TokenType.SUB,
+                                    TokenType.IDENT, TokenType.NUMFLOAT,
+                                    TokenType.NUMINT}:
             self.expr()
             self.consome(TokenType.SEMICOLON)
 
@@ -114,7 +125,8 @@ class Parser:
         if self.curr_token.id == TokenType.SCAN:
             self.consome(TokenType.SCAN)
             self.consome(TokenType.OPAR)
-            self.out_list()
+            self.consome(TokenType.IDENT)
+            # self.out_list()
         elif self.curr_token.id == TokenType.PRINT:
             self.consome(TokenType.PRINT)
             self.consome(TokenType.OPAR)
@@ -127,9 +139,7 @@ class Parser:
         self.resto_out_list()
 
     def out(self):
-        if self.curr_token.id in {TokenType.STR, TokenType.IDENT,
-                                  TokenType.NUMINT, TokenType.NUMFLOAT}:
-            self.consome(self.curr_token.id)
+        self.consome(self.curr_token.id)
 
     def resto_out_list(self):
         if self.curr_token.id == TokenType.COMMA:
@@ -249,9 +259,11 @@ class Parser:
             self.consome(TokenType.CPAR)
 
     def consome(self, tok):
-
         if (self.curr_token.id == tok):
-            self.curr_token = self.lexer.get_token()
+            if self.curr_token.id == TokenType.EOF:
+                return
+            else:
+                self.curr_token = self.lexer.get_token()
         else:
             raise Exception(
                 f'Parser error: line {self.curr_token.row}, '

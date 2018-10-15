@@ -229,6 +229,7 @@ class Lexer:
                         line = self._file.readline()
                         self.row += 1
                     line = self._file.readline()
+                    self.row += 1
                     self.buffer = ''
                     self.col == 1
                     previous_state = current_state = State.INIT
@@ -241,7 +242,6 @@ class Lexer:
                     current_state == State.FIN
 
             if current_state == State.INIT:
-                # TODO verificar se line = ''
                 if symb == Symbol.SPACE:
                     line = line[1:]
                     self.col += 1
