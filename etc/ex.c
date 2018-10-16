@@ -6,21 +6,20 @@
 */  
 
 int main() {
-	int num, div, resto;
-	print("Entre com o inteiro:");
-	scan(num);
+    int num, div, resto;
+    scan("Entre com o inteiro:", num);
 
-	print("Fatorando...\n");
-	print(num, " = ");
+    print("Fatorando...\n");
+    print(num, " = ");
 
     // procura e imprime os fatores
     while (num > 1) {
         // encontra o menor fator
-	    for (div = 2; num % div; div = div + 1);
+        for (div = 2; num % div; div = div + 1);
 
-	    print(div);
-	    num = num / div;
-	    if (num > 1)
-	       print(" * ");
-	} 
+        print(div);
+        num = num / div;
+        if (num > 1)
+           print(" * ");
+    } 
 } 
