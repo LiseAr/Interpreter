@@ -14,7 +14,7 @@ class Intepreter:
 
 
 def main():
-    if (len(argv) <= 1):
+    if len(argv) <= 1:
         print('Falta nome do Arquivo')
         return
 
