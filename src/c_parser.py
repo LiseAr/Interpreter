@@ -360,6 +360,7 @@ class Parser:
             if self.curr_token.id == TokenType.EOF:
                 return
             else:
+                self.tree.put_token(self.curr_token.name)
                 self.curr_token = self.lexer.get_token()
         else:
             self._error(f'expected {tok} found {self.curr_token.name}')
