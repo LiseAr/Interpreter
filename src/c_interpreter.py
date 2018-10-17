@@ -11,7 +11,7 @@ class Intepreter:
 
     def run(self):
         try:
-            self.parser.function()
+            self.parser.parse()
         except (LexerError, ParserError) as exception:
             print(exception)
 

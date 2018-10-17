@@ -1,4 +1,7 @@
+from functools import wraps
+
 from c_lexer import Lexer
+from c_parser_tree import ParserTree
 from c_token import Token, TokenType
 
 
@@ -11,16 +14,33 @@ class Result:
         self.lvalue = lvalue
 
 
+def rule(func):
+    @wraps(func)
+    def _newfunc(self):
+        self.tree.push(func.__name__)
+        result = func(self)
+        self.tree.pop()
+        return result
+    return _newfunc
+
+
 class Parser:
     def __init__(self, lexer: Lexer):
         self.curr_token: Token
         self.lexer = lexer
+        self.tree = ParserTree()
+
+    def parse(self):
+        self._function()
+        with open('tree.dot', 'w') as file:
+            file.write(str(self.tree))
 
     def _error(self, msg):
         raise ParserError(f'Parser error: line {self.curr_token.row}, '
                           f'column {self.curr_token.col}: {msg}')
 
-    def function(self):
+    @rule
+    def _function(self):
         self.curr_token = self.lexer.get_token()
         self._type()
         self._consome(TokenType.IDENT)
@@ -30,28 +50,34 @@ class Parser:
         self._bloco()
         self._consome(TokenType.EOF)
 
+    @rule
     def _arg_list(self):
         if self.curr_token.id in {TokenType.INT, TokenType.FLOAT}:
             self._arg()
             self._resto_arg_list()
 
+    @rule
     def _arg(self):
         self._type()
         self._consome(TokenType.IDENT)
 
+    @rule
     def _resto_arg_list(self):
         if self.curr_token.name[0] == TokenType.COMMA:
             self._consome(TokenType.COMMA)
             self._arg_list()
 
+    @rule
     def _type(self):
         self._consome(self.curr_token.id)
 
+    @rule
     def _bloco(self):
         self._consome(TokenType.OBRKT)
         self._stmt_list()
         self._consome(TokenType.CBRKT)
 
+    @rule
     def _stmt_list(self):
         if self.curr_token.id in {TokenType.NOT, TokenType.OPAR,
                                   TokenType.PLUS, TokenType.SUB,
@@ -65,6 +91,7 @@ class Parser:
             self._stmt()
             self._stmt_list()
 
+    @rule
     def _stmt(self):
         if self.curr_token.id == TokenType.FOR:
             self._for_stmt()
@@ -101,21 +128,25 @@ class Parser:
     # descricao das instrucoes
     # ---------------------------
 
+    @rule
     def _declaration(self):
         self._type()
         self._ident_list()
         self._consome(TokenType.SEMICOLON)
 
+    @rule
     def _ident_list(self):
         self._consome(TokenType.IDENT)
         self._resto_ident_list()
 
+    @rule
     def _resto_ident_list(self):
         if self.curr_token.id == TokenType.COMMA:
             self._consome(TokenType.COMMA)
             self._consome(TokenType.IDENT)
             self._resto_ident_list()
 
+    @rule
     def _for_stmt(self):
         self._consome(TokenType.FOR)
         self._consome(TokenType.OPAR)
@@ -127,6 +158,7 @@ class Parser:
         self._consome(TokenType.CPAR)
         self._stmt()
 
+    @rule
     def _opt_exp(self):
         if self.curr_token.id in {TokenType.NOT, TokenType.OPAR,
                                   TokenType.PLUS, TokenType.SUB,
@@ -134,6 +166,7 @@ class Parser:
                                   TokenType.NUMINT}:
             self._expr()
 
+    @rule
     def _io_stmt(self):
         if self.curr_token.id == TokenType.SCAN:
             self._consome(TokenType.SCAN)
@@ -148,19 +181,23 @@ class Parser:
         self._consome(TokenType.CPAR)
         self._consome(TokenType.SEMICOLON)
 
+    @rule
     def _out_list(self):
         self._out()
         self._resto_out_list()
 
+    @rule
     def _out(self):
         self._consome(self.curr_token.id)
 
+    @rule
     def _resto_out_list(self):
         if self.curr_token.id == TokenType.COMMA:
             self._consome(TokenType.COMMA)
             self._out()
             self._resto_out_list()
 
+    @rule
     def _while_stmt(self):
         self._consome(TokenType.WHILE)
         self._consome(TokenType.OPAR)
@@ -168,6 +205,7 @@ class Parser:
         self._consome(TokenType.CPAR)
         self._stmt()
 
+    @rule
     def _if_stmt(self):
         self._consome(TokenType.IF)
         self._consome(TokenType.OPAR)
@@ -176,6 +214,7 @@ class Parser:
         self._stmt()
         self._else_part()
 
+    @rule
     def _else_part(self):
         if self.curr_token.id == TokenType.ELSE:
             self._consome(TokenType.ELSE)
@@ -185,15 +224,18 @@ class Parser:
     # expressoes
     # ------------------------------
 
+    @rule
     def _expr(self):
         self._atrib()
 
+    @rule
     def _atrib(self):
         l_result = self._or()
         r_result = self._resto_atrib()
         if r_result.lvalue and not l_result.lvalue:
             self._error('Expression before = is not a lvalue.')
 
+    @rule
     def _resto_atrib(self):
         if self.curr_token.id == TokenType.EQUAL:
             self._consome(TokenType.EQUAL)
@@ -201,12 +243,14 @@ class Parser:
             return Result(True)
         return Result(False)
 
+    @rule
     def _or(self):
         results = []
         results.append(self._and())
         results.append(self._resto_or())
         return Result(all(r.lvalue for r in results))
 
+    @rule
     def _resto_or(self):
         if self.curr_token.id == TokenType.OR:
             self._consome(TokenType.OR)
@@ -215,12 +259,14 @@ class Parser:
             return Result(False)
         return Result(True)
 
+    @rule
     def _and(self):
         results = []
         results.append(self._not())
         results.append(self._resto_and())
         return Result(all(r.lvalue for r in results))
 
+    @rule
     def _resto_and(self):
         if self.curr_token.id == TokenType.AND:
             self._consome(TokenType.AND)
@@ -229,6 +275,7 @@ class Parser:
             return Result(False)
         return Result(True)
 
+    @rule
     def _not(self):
         if self.curr_token.id == TokenType.NOT:
             self._consome(TokenType.NOT)
@@ -237,12 +284,14 @@ class Parser:
         else:
             return self._rel()
 
+    @rule
     def _rel(self):
         results = []
         results.append(self._add())
         results.append(self._resto_rel())
         return Result(all(r.lvalue for r in results))
 
+    @rule
     def _resto_rel(self):
         if self.curr_token.id in {TokenType.LEQUAL, TokenType.LDIFF,
                                   TokenType.LESS, TokenType.LESSEQ,
@@ -252,12 +301,14 @@ class Parser:
             return Result(False)
         return Result(True)
 
+    @rule
     def _add(self):
         results = []
         results.append(self._mult())
         results.append(self._resto_add())
         return Result(all(r.lvalue for r in results))
 
+    @rule
     def _resto_add(self):
         if self.curr_token.id in {TokenType.PLUS, TokenType.SUB}:
             self._consome(self.curr_token.id)
@@ -266,12 +317,14 @@ class Parser:
             return Result(False)
         return Result(True)
 
+    @rule
     def _mult(self):
         results = []
         results.append(self._uno())
         results.append(self._resto_mult())
         return Result(all(r.lvalue for r in results))
 
+    @rule
     def _resto_mult(self):
         if self.curr_token.id in {TokenType.MULT, TokenType.DIV,
                                   TokenType.MOD}:
@@ -281,6 +334,7 @@ class Parser:
             return Result(False)
         return Result(True)
 
+    @rule
     def _uno(self):
         if self.curr_token.id in {TokenType.PLUS, TokenType.SUB}:
             self._consome(self.curr_token.id)
@@ -288,6 +342,7 @@ class Parser:
         else:
             return self._fator()
 
+    @rule
     def _fator(self):
         if self.curr_token.id in {TokenType.NUMINT, TokenType.NUMFLOAT,
                                   TokenType.IDENT}:
