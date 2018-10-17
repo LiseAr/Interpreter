@@ -2,7 +2,8 @@ from enum import auto, Enum
 from c_token import Token, TokenType
 
 
-_ERROR_MSG = 'Lexer error: line {}, column {}: {}'
+class LexerError(Exception):
+    pass
 
 
 class File:
@@ -86,7 +87,6 @@ TRANSITIONS = {
                  Symbol.SPACE: State.INIT,
                  Symbol.BKL: State.INIT,
                  Symbol.QMK: State.STR,
-                 Symbol.INV: State.ERR,
                  Symbol.SLSH: State.SLSH},
 
     # nesse estado se constroi identificadores e palavras reservadas
@@ -97,8 +97,6 @@ TRANSITIONS = {
                 Symbol.SPACE: State.FIN,
                 Symbol.BKL: State.FIN,
                 Symbol.QMK: State.FIN,
-                # Symbol.INV: State.ERR,
-                Symbol.PTO: State.ERR,
                 Symbol.SLSH: State.FIN,
                 Symbol.ASTK: State.FIN},
 
@@ -109,23 +107,12 @@ TRANSITIONS = {
                 Symbol.SPACE: State.FIN,
                 Symbol.BKL: State.FIN,
                 Symbol.QMK: State.FIN,
-                # Symbol.INV: State.ERR,
                 Symbol.PTO: State.NUMPTO,
                 Symbol.SLSH: State.FIN,
                 Symbol.ASTK: State.FIN,
                 Symbol.UNDLN: State.FIN},
 
-    State.NUMPTO: {Symbol.LET: State.ERR,
-                   Symbol.NUM: State.PTONUM,
-                   Symbol.OPER: State.ERR,
-                   Symbol.SPACE: State.ERR,
-                   Symbol.BKL: State.ERR,
-                   Symbol.QMK: State.ERR,
-                   Symbol.INV: State.ERR,
-                   Symbol.PTO: State.ERR,
-                   Symbol.SLSH: State.ERR,
-                   Symbol.ASTK: State.ERR,
-                   Symbol.UNDLN: State.ERR},
+    State.NUMPTO: {Symbol.NUM: State.PTONUM},
 
     State.PTONUM: {Symbol.LET: State.FIN,
                    Symbol.NUM: State.PTONUM,
@@ -133,7 +120,6 @@ TRANSITIONS = {
                    Symbol.SPACE: State.FIN,
                    Symbol.BKL: State.FIN,
                    Symbol.QMK: State.FIN,
-                   # Symbol.INV: State.ERR,
                    Symbol.PTO: State.FIN,
                    Symbol.SLSH: State.FIN,
                    Symbol.ASTK: State.FIN,
@@ -160,7 +146,6 @@ TRANSITIONS = {
                  Symbol.SPACE: State.FIN,
                  Symbol.BKL: State.FIN,
                  Symbol.QMK: State.FIN,
-                 Symbol.INV: State.FIN,
                  Symbol.SLSH: State.INIT},
 
     State.OPER: {Symbol.LET: State.FIN,
@@ -169,7 +154,6 @@ TRANSITIONS = {
                  Symbol.SPACE: State.FIN,
                  Symbol.BKL: State.FIN,
                  Symbol.QMK: State.FIN,
-                 Symbol.INV: State.ERR,
                  Symbol.PTO: State.FIN,
                  Symbol.SLSH: State.FIN,
                  Symbol.ASTK: State.FIN,
@@ -181,7 +165,6 @@ TRANSITIONS = {
                   Symbol.SPACE: State.FIN,
                   Symbol.BKL: State.FIN,
                   Symbol.QMK: State.FIN,
-                  Symbol.INV: State.ERR,
                   Symbol.PTO: State.FIN,
                   Symbol.SLSH: State.FIN,
                   Symbol.ASTK: State.FIN,
@@ -208,6 +191,10 @@ class Lexer:
         self.col = 1
         self.buffer = ''
 
+    def _error(self, msg):
+        raise LexerError(f'Parser error: line {self.row}, '
+                         f'column {self.col}: {msg}')
+
     def get_token(self):
 
         if self._file.line == '':
@@ -221,7 +208,7 @@ class Lexer:
         while True:
             symb = symb_type(line[0])
             previous_state = current_state
-            current_state = TRANSITIONS[previous_state][symb]
+            current_state = TRANSITIONS[previous_state].get(symb, State.ERR)
 
             if current_state not in {State.INIT, State.FIN, State.ERR}:
                 if current_state == State.CMTB:
@@ -233,8 +220,8 @@ class Lexer:
                     self.buffer = ''
                     self.col = 1
                     previous_state = current_state = State.INIT
-                elif current_state != State.OPER2 or \
-                        Token.get_token_type(self.buffer+line[0]) is not None:
+                elif (current_state != State.OPER2 or
+                      Token.get_token_type(self.buffer + line[0]) is not None):
                     self.buffer = self.buffer + line[0]
                     line = line[1:]
                     self.col += 1
@@ -267,6 +254,10 @@ class Lexer:
                 self._file.line = line
                 return Token(self.row, self.col - len(self.buffer),
                              self.buffer, token_id)
+
+            elif current_state == State.ERR:
+                self.buffer += line[0]
+                self._error(f'Invalid token {self.buffer}')
 
             if line == '':
                 line = self._file.readline()

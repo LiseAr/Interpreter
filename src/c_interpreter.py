@@ -1,6 +1,6 @@
 from sys import argv
-from c_lexer import Lexer
-from c_parser import Parser
+from c_lexer import Lexer, LexerError
+from c_parser import Parser, ParserError
 
 
 class Intepreter:
@@ -10,7 +10,10 @@ class Intepreter:
         self.parser = Parser(self.lexer)
 
     def run(self):
-        self.parser.function()
+        try:
+            self.parser.parse()
+        except (LexerError, ParserError) as exception:
+            print(exception)
 
 
 def main():

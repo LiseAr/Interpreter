@@ -1,46 +1,47 @@
-from enum import Enum
+from enum import auto, Enum
 
 
 class TokenType(Enum):
-    IDENT = 0
-    OPAR = 1
-    CPAR = 2
-    COMMA = 3
-    INT = 4  # type
-    FLOAT = 5  # type
-    OBRKT = 6  # curly brackets
-    CBRKT = 7
-    BREAK = 8
-    CONTINUE = 9
-    SEMICOLON = 10
-    FOR = 11
-    SCAN = 12
-    PRINT = 13
-    STR = 14
-    NUMINT = 15
-    NUMFLOAT = 16
-    WHILE = 17
-    IF = 18
-    ELSE = 19
-    EQUAL = 20
-    OR = 21
-    AND = 22
-    NOT = 23
-    LEQUAL = 24
-    LDIFF = 25
-    LESS = 26
-    LESSEQ = 27
-    BIGG = 28
-    BIGGEQ = 29
-    PLUS = 30
-    SUB = 31
-    MULT = 32
-    DIV = 33
-    MOD = 34
-    EOF = 35
-    ERR = 36
-    CMT = 37
-    NONE = 38
+    IDENT = auto()
+    OPAR = auto()
+    CPAR = auto()
+    COMMA = auto()
+    INT = auto()  # type
+    FLOAT = auto()  # type
+    OBRKT = auto()  # curly brackets
+    CBRKT = auto()
+    BREAK = auto()
+    CONTINUE = auto()
+    RETURN = auto()
+    SEMICOLON = auto()
+    FOR = auto()
+    SCAN = auto()
+    PRINT = auto()
+    STR = auto()
+    NUMINT = auto()
+    NUMFLOAT = auto()
+    WHILE = auto()
+    IF = auto()
+    ELSE = auto()
+    EQUAL = auto()
+    OR = auto()
+    AND = auto()
+    NOT = auto()
+    LEQUAL = auto()
+    LDIFF = auto()
+    LESS = auto()
+    LESSEQ = auto()
+    BIGG = auto()
+    BIGGEQ = auto()
+    PLUS = auto()
+    SUB = auto()
+    MULT = auto()
+    DIV = auto()
+    MOD = auto()
+    EOF = auto()
+    ERR = auto()
+    CMT = auto()
+    NONE = auto()
 
 
 _TOKEN_DICT = {

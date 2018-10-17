@@ -15,8 +15,9 @@
    | <expr> ';' 
    | <ifStmt> 
    | <bloco> 
-   | 'break'
-   | 'continue'
+   | 'break' ';'
+   | 'continue' ';'
+   | 'return' <fator> ';'
    | <declaration>
    | ';' ;
 
@@ -35,7 +36,7 @@
 <optExpr> -> <expr> | & ;
 # comandos de IO
 # em scan mudei 'IDENT' por <outList>
-<ioStmt> -> 'scan' '(' 'IDENT' ')' ';' 
+<ioStmt> -> 'scan' '(' 'STR' ',' 'IDENT' ')' ';' 
           | 'print' '(' <outList> ')' ';' ;
 <outList> -> <out> <restoOutList> ;         
 <out> -> 'STR' | 'IDENT' | 'NUMint' | 'NUMfloat' ;

@@ -1,5 +1,12 @@
+from functools import wraps
+
 from c_lexer import Lexer
+from c_parser_tree import ParserTree
 from c_token import Token, TokenType
+
+
+class ParserError(Exception):
+    pass
 
 
 class Result:
@@ -7,48 +14,71 @@ class Result:
         self.lvalue = lvalue
 
 
+def rule(func):
+    @wraps(func)
+    def _newfunc(self):
+        self.tree.push(func.__name__)
+        result = func(self)
+        self.tree.pop()
+        return result
+    return _newfunc
+
+
 class Parser:
     def __init__(self, lexer: Lexer):
         self.curr_token: Token
         self.lexer = lexer
+        self.tree = ParserTree()
 
-    def error(self, msg):
-        raise Exception(f'Parser error: line {self.curr_token.row}, '
-                        f'column {self.curr_token.col}: {msg}')
+    def parse(self):
+        self._function()
+        with open('tree.dot', 'w') as file:
+            file.write(str(self.tree))
 
-    def function(self):
+    def _error(self, msg):
+        raise ParserError(f'Parser error: line {self.curr_token.row}, '
+                          f'column {self.curr_token.col}: {msg}')
+
+    @rule
+    def _function(self):
         self.curr_token = self.lexer.get_token()
-        self.type()
-        self.consome(TokenType.IDENT)
-        self.consome(TokenType.OPAR)
-        self.arg_list()
-        self.consome(TokenType.CPAR)
-        self.bloco()
-        self.consome(TokenType.EOF)
+        self._type()
+        self._consome(TokenType.IDENT)
+        self._consome(TokenType.OPAR)
+        self._arg_list()
+        self._consome(TokenType.CPAR)
+        self._bloco()
+        self._consome(TokenType.EOF)
 
-    def arg_list(self):
+    @rule
+    def _arg_list(self):
         if self.curr_token.id in {TokenType.INT, TokenType.FLOAT}:
-            self.arg()
-            self.resto_arg_list()
+            self._arg()
+            self._resto_arg_list()
 
-    def arg(self):
-        self.type()
-        self.consome(TokenType.IDENT)
+    @rule
+    def _arg(self):
+        self._type()
+        self._consome(TokenType.IDENT)
 
-    def resto_arg_list(self):
+    @rule
+    def _resto_arg_list(self):
         if self.curr_token.name[0] == TokenType.COMMA:
-            self.consome(TokenType.COMMA)
-            self.arg_list()
+            self._consome(TokenType.COMMA)
+            self._arg_list()
 
-    def type(self):
-        self.consome(self.curr_token.id)
+    @rule
+    def _type(self):
+        self._consome(self.curr_token.id)
 
-    def bloco(self):
-        self.consome(TokenType.OBRKT)
-        self.stmt_list()
-        self.consome(TokenType.CBRKT)
+    @rule
+    def _bloco(self):
+        self._consome(TokenType.OBRKT)
+        self._stmt_list()
+        self._consome(TokenType.CBRKT)
 
-    def stmt_list(self):
+    @rule
+    def _stmt_list(self):
         if self.curr_token.id in {TokenType.NOT, TokenType.OPAR,
                                   TokenType.PLUS, TokenType.SUB,
                                   TokenType.SEMICOLON, TokenType.IDENT,
@@ -58,242 +88,278 @@ class Parser:
                                   TokenType.IF, TokenType.INT, TokenType.PRINT,
                                   TokenType.SCAN, TokenType.WHILE,
                                   TokenType.OBRKT}:
-            self.stmt()
-            self.stmt_list()
+            self._stmt()
+            self._stmt_list()
 
-    def stmt(self):
+    @rule
+    def _stmt(self):
         if self.curr_token.id == TokenType.FOR:
-            self.for_stmt()
+            self._for_stmt()
         elif self.curr_token.id in {TokenType.SCAN, TokenType.PRINT}:
-            self.io_stmt()
+            self._io_stmt()
         elif self.curr_token.id == TokenType.WHILE:
-            self.while_stmt()
+            self._while_stmt()
         elif self.curr_token.id == TokenType.IF:
-            self.if_stmt()
+            self._if_stmt()
         elif self.curr_token.id == TokenType.OBRKT:
-            self.bloco()
-        elif self.curr_token.id == 'break':
-            self.consome(TokenType.BREAK)
-        elif self.curr_token.id == 'continue':
-            self.consome(TokenType.CONTINUE)
+            self._bloco()
+        elif self.curr_token.id == TokenType.BREAK:
+            self._consome(TokenType.BREAK)
+            self._consome(TokenType.SEMICOLON)
+        elif self.curr_token.id == TokenType.CONTINUE:
+            self._consome(TokenType.CONTINUE)
+            self._consome(TokenType.SEMICOLON)
+        elif self.curr_token.id == TokenType.RETURN:
+            self._consome(TokenType.RETURN)
+            self._fator()
+            self._consome(TokenType.SEMICOLON)
         elif self.curr_token.id in {TokenType.INT, TokenType.FLOAT}:
-            self.declaration()
+            self._declaration()
         elif self.curr_token.id == TokenType.SEMICOLON:
-            self.consome(TokenType.SEMICOLON)
+            self._consome(TokenType.SEMICOLON)
         elif self.curr_token.id in {TokenType.NOT, TokenType.OPAR,
                                     TokenType.PLUS, TokenType.SUB,
                                     TokenType.IDENT, TokenType.NUMFLOAT,
                                     TokenType.NUMINT}:
-            self.expr()
-            self.consome(TokenType.SEMICOLON)
+            self._expr()
+            self._consome(TokenType.SEMICOLON)
 
     # ---------------------------
     # descricao das instrucoes
     # ---------------------------
 
-    def declaration(self):
-        self.type()
-        self.ident_list()
-        self.consome(TokenType.SEMICOLON)
+    @rule
+    def _declaration(self):
+        self._type()
+        self._ident_list()
+        self._consome(TokenType.SEMICOLON)
 
-    def ident_list(self):
-        self.consome(TokenType.IDENT)
-        self.resto_ident_list()
+    @rule
+    def _ident_list(self):
+        self._consome(TokenType.IDENT)
+        self._resto_ident_list()
 
-    def resto_ident_list(self):
+    @rule
+    def _resto_ident_list(self):
         if self.curr_token.id == TokenType.COMMA:
-            self.consome(TokenType.COMMA)
-            self.consome(TokenType.IDENT)
-            self.resto_ident_list()
+            self._consome(TokenType.COMMA)
+            self._consome(TokenType.IDENT)
+            self._resto_ident_list()
 
-    def for_stmt(self):
-        self.consome(TokenType.FOR)
-        self.consome(TokenType.OPAR)
-        self.opt_exp()
-        self.consome(TokenType.SEMICOLON)
-        self.opt_exp()
-        self.consome(TokenType.SEMICOLON)
-        self.opt_exp()
-        self.consome(TokenType.CPAR)
-        self.stmt()
+    @rule
+    def _for_stmt(self):
+        self._consome(TokenType.FOR)
+        self._consome(TokenType.OPAR)
+        self._opt_exp()
+        self._consome(TokenType.SEMICOLON)
+        self._opt_exp()
+        self._consome(TokenType.SEMICOLON)
+        self._opt_exp()
+        self._consome(TokenType.CPAR)
+        self._stmt()
 
-    def opt_exp(self):
+    @rule
+    def _opt_exp(self):
         if self.curr_token.id in {TokenType.NOT, TokenType.OPAR,
                                   TokenType.PLUS, TokenType.SUB,
                                   TokenType.IDENT, TokenType.NUMFLOAT,
                                   TokenType.NUMINT}:
-            self.expr()
+            self._expr()
 
-    def io_stmt(self):
+    @rule
+    def _io_stmt(self):
         if self.curr_token.id == TokenType.SCAN:
-            self.consome(TokenType.SCAN)
-            self.consome(TokenType.OPAR)
-            self.consome(TokenType.IDENT)
-            # self.out_list()
+            self._consome(TokenType.SCAN)
+            self._consome(TokenType.OPAR)
+            self._consome(TokenType.STR)
+            self._consome(TokenType.COMMA)
+            self._consome(TokenType.IDENT)
         elif self.curr_token.id == TokenType.PRINT:
-            self.consome(TokenType.PRINT)
-            self.consome(TokenType.OPAR)
-            self.out_list()
-        self.consome(TokenType.CPAR)
-        self.consome(TokenType.SEMICOLON)
+            self._consome(TokenType.PRINT)
+            self._consome(TokenType.OPAR)
+            self._out_list()
+        self._consome(TokenType.CPAR)
+        self._consome(TokenType.SEMICOLON)
 
-    def out_list(self):
-        self.out()
-        self.resto_out_list()
+    @rule
+    def _out_list(self):
+        self._out()
+        self._resto_out_list()
 
-    def out(self):
-        self.consome(self.curr_token.id)
+    @rule
+    def _out(self):
+        self._consome(self.curr_token.id)
 
-    def resto_out_list(self):
+    @rule
+    def _resto_out_list(self):
         if self.curr_token.id == TokenType.COMMA:
-            self.consome(TokenType.COMMA)
-            self.out()
-            self.resto_out_list()
+            self._consome(TokenType.COMMA)
+            self._out()
+            self._resto_out_list()
 
-    def while_stmt(self):
-        self.consome(TokenType.WHILE)
-        self.consome(TokenType.OPAR)
-        self.expr()
-        self.consome(TokenType.CPAR)
-        self.stmt()
+    @rule
+    def _while_stmt(self):
+        self._consome(TokenType.WHILE)
+        self._consome(TokenType.OPAR)
+        self._expr()
+        self._consome(TokenType.CPAR)
+        self._stmt()
 
-    def if_stmt(self):
-        self.consome(TokenType.IF)
-        self.consome(TokenType.OPAR)
-        self.expr()
-        self.consome(TokenType.CPAR)
-        self.stmt()
-        self.else_part()
+    @rule
+    def _if_stmt(self):
+        self._consome(TokenType.IF)
+        self._consome(TokenType.OPAR)
+        self._expr()
+        self._consome(TokenType.CPAR)
+        self._stmt()
+        self._else_part()
 
-    def else_part(self):
+    @rule
+    def _else_part(self):
         if self.curr_token.id == TokenType.ELSE:
-            self.consome(TokenType.ELSE)
-            self.stmt()
+            self._consome(TokenType.ELSE)
+            self._stmt()
 
     # ------------------------------
     # expressoes
     # ------------------------------
 
-    def expr(self):
-        self.atrib()
+    @rule
+    def _expr(self):
+        self._atrib()
 
-    def atrib(self):
-        l_result = self.or_()
-        r_result = self.resto_atrib()
+    @rule
+    def _atrib(self):
+        l_result = self._or()
+        r_result = self._resto_atrib()
         if r_result.lvalue and not l_result.lvalue:
-            self.error('Expression before = is not a lvalue.')
+            self._error('Expression before = is not a lvalue.')
 
-    def resto_atrib(self):
+    @rule
+    def _resto_atrib(self):
         if self.curr_token.id == TokenType.EQUAL:
-            self.consome(TokenType.EQUAL)
-            self.atrib()
+            self._consome(TokenType.EQUAL)
+            self._atrib()
             return Result(True)
         return Result(False)
 
-    def or_(self):
+    @rule
+    def _or(self):
         results = []
-        results.append(self.and_())
-        results.append(self.resto_or())
+        results.append(self._and())
+        results.append(self._resto_or())
         return Result(all(r.lvalue for r in results))
 
-    def resto_or(self):
+    @rule
+    def _resto_or(self):
         if self.curr_token.id == TokenType.OR:
-            self.consome(TokenType.OR)
-            self.and_()
-            self.resto_or()
+            self._consome(TokenType.OR)
+            self._and()
+            self._resto_or()
             return Result(False)
         return Result(True)
 
-    def and_(self):
+    @rule
+    def _and(self):
         results = []
-        results.append(self.not_())
-        results.append(self.resto_and())
+        results.append(self._not())
+        results.append(self._resto_and())
         return Result(all(r.lvalue for r in results))
 
-    def resto_and(self):
+    @rule
+    def _resto_and(self):
         if self.curr_token.id == TokenType.AND:
-            self.consome(TokenType.AND)
-            self.not_()
-            self.resto_and()
+            self._consome(TokenType.AND)
+            self._not()
+            self._resto_and()
             return Result(False)
         return Result(True)
 
-    def not_(self):
+    @rule
+    def _not(self):
         if self.curr_token.id == TokenType.NOT:
-            self.consome(TokenType.NOT)
-            self.not_()
+            self._consome(TokenType.NOT)
+            self._not()
             return Result(False)
         else:
-            return self.rel()
+            return self._rel()
 
-    def rel(self):
+    @rule
+    def _rel(self):
         results = []
-        results.append(self.add())
-        results.append(self.resto_rel())
+        results.append(self._add())
+        results.append(self._resto_rel())
         return Result(all(r.lvalue for r in results))
 
-    def resto_rel(self):
+    @rule
+    def _resto_rel(self):
         if self.curr_token.id in {TokenType.LEQUAL, TokenType.LDIFF,
                                   TokenType.LESS, TokenType.LESSEQ,
                                   TokenType.BIGG, TokenType.BIGGEQ}:
-            self.consome(self.curr_token.id)
-            self.add()
+            self._consome(self.curr_token.id)
+            self._add()
             return Result(False)
         return Result(True)
 
-    def add(self):
+    @rule
+    def _add(self):
         results = []
-        results.append(self.mult())
-        results.append(self.resto_add())
+        results.append(self._mult())
+        results.append(self._resto_add())
         return Result(all(r.lvalue for r in results))
 
-    def resto_add(self):
+    @rule
+    def _resto_add(self):
         if self.curr_token.id in {TokenType.PLUS, TokenType.SUB}:
-            self.consome(self.curr_token.id)
-            self.mult()
-            self.resto_add()
+            self._consome(self.curr_token.id)
+            self._mult()
+            self._resto_add()
             return Result(False)
         return Result(True)
 
-    def mult(self):
+    @rule
+    def _mult(self):
         results = []
-        results.append(self.uno())
-        results.append(self.resto_mult())
+        results.append(self._uno())
+        results.append(self._resto_mult())
         return Result(all(r.lvalue for r in results))
 
-    def resto_mult(self):
+    @rule
+    def _resto_mult(self):
         if self.curr_token.id in {TokenType.MULT, TokenType.DIV,
                                   TokenType.MOD}:
-            self.consome(self.curr_token.id)
-            self.uno()
-            self.resto_mult()
+            self._consome(self.curr_token.id)
+            self._uno()
+            self._resto_mult()
             return Result(False)
         return Result(True)
 
-    def uno(self):
+    @rule
+    def _uno(self):
         if self.curr_token.id in {TokenType.PLUS, TokenType.SUB}:
-            self.consome(self.curr_token.id)
-            return self.uno()
+            self._consome(self.curr_token.id)
+            return self._uno()
         else:
-            return self.fator()
+            return self._fator()
 
-    def fator(self):
+    @rule
+    def _fator(self):
         if self.curr_token.id in {TokenType.NUMINT, TokenType.NUMFLOAT,
                                   TokenType.IDENT}:
             result = Result(self.curr_token.id == TokenType.IDENT)
-            self.consome(self.curr_token.id)
+            self._consome(self.curr_token.id)
             return result
         else:
-            self.consome(TokenType.OPAR)
-            self.atrib()
-            self.consome(TokenType.CPAR)
+            self._consome(TokenType.OPAR)
+            self._atrib()
+            self._consome(TokenType.CPAR)
             return Result(False)
 
-    def consome(self, tok):
+    def _consome(self, tok):
         if self.curr_token.id == tok:
             if self.curr_token.id == TokenType.EOF:
                 return
             else:
                 self.curr_token = self.lexer.get_token()
         else:
-            self.error(f'expected {tok} found {self.curr_token.name}')
+            self._error(f'expected {tok} found {self.curr_token.name}')
