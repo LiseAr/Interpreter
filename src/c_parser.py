@@ -2,19 +2,22 @@ from c_lexer import Lexer
 from c_token import Token, TokenType
 
 
+class Result:
+    def __init__(self, lvalue: bool = None):
+        self.lvalue = lvalue
+
+
 class Parser:
     def __init__(self, lexer: Lexer):
         self.curr_token: Token
         self.lexer = lexer
 
+    def error(self, msg):
+        raise Exception(f'Parser error: line {self.curr_token.row}, '
+                        f'column {self.curr_token.col}: {msg}')
+
     def function(self):
         self.curr_token = self.lexer.get_token()
-        '''
-        print(self.curr_token)
-        while self.curr_token.id != TokenType.EOF:
-           self.curr_token = self.lexer.get_token()
-           print(self.curr_token)
-        '''
         self.type()
         self.consome(TokenType.IDENT)
         self.consome(TokenType.OPAR)
@@ -175,44 +178,59 @@ class Parser:
         self.atrib()
 
     def atrib(self):
-        self.or_()
-        self.resto_atrib()
+        l_result = self.or_()
+        r_result = self.resto_atrib()
+        if r_result.lvalue and not l_result.lvalue:
+            self.error('Expression before = is not a lvalue.')
 
     def resto_atrib(self):
         if self.curr_token.id == TokenType.EQUAL:
             self.consome(TokenType.EQUAL)
             self.atrib()
+            return Result(True)
+        return Result(False)
 
     def or_(self):
-        self.and_()
-        self.resto_or()
+        results = []
+        results.append(self.and_())
+        results.append(self.resto_or())
+        return Result(all(r.lvalue for r in results))
 
     def resto_or(self):
-        if (self.curr_token.id == TokenType.OR):
+        if self.curr_token.id == TokenType.OR:
             self.consome(TokenType.OR)
             self.and_()
             self.resto_or()
+            return Result(False)
+        return Result(True)
 
     def and_(self):
-        self.not_()
-        self.resto_and()
+        results = []
+        results.append(self.not_())
+        results.append(self.resto_and())
+        return Result(all(r.lvalue for r in results))
 
     def resto_and(self):
         if self.curr_token.id == TokenType.AND:
             self.consome(TokenType.AND)
             self.not_()
             self.resto_and()
+            return Result(False)
+        return Result(True)
 
     def not_(self):
         if self.curr_token.id == TokenType.NOT:
             self.consome(TokenType.NOT)
             self.not_()
+            return Result(False)
         else:
-            self.rel()
+            return self.rel()
 
     def rel(self):
-        self.add()
-        self.resto_rel()
+        results = []
+        results.append(self.add())
+        results.append(self.resto_rel())
+        return Result(all(r.lvalue for r in results))
 
     def resto_rel(self):
         if self.curr_token.id in {TokenType.LEQUAL, TokenType.LDIFF,
@@ -220,52 +238,62 @@ class Parser:
                                   TokenType.BIGG, TokenType.BIGGEQ}:
             self.consome(self.curr_token.id)
             self.add()
+            return Result(False)
+        return Result(True)
 
     def add(self):
-        self.mult()
-        self.resto_add()
+        results = []
+        results.append(self.mult())
+        results.append(self.resto_add())
+        return Result(all(r.lvalue for r in results))
 
     def resto_add(self):
-        if self.curr_token.id in [TokenType.PLUS, TokenType.SUB]:
+        if self.curr_token.id in {TokenType.PLUS, TokenType.SUB}:
             self.consome(self.curr_token.id)
             self.mult()
             self.resto_add()
+            return Result(False)
+        return Result(True)
 
     def mult(self):
-        self.uno()
-        self.resto_mult()
+        results = []
+        results.append(self.uno())
+        results.append(self.resto_mult())
+        return Result(all(r.lvalue for r in results))
 
     def resto_mult(self):
-        if self.curr_token.id in [TokenType.MULT, TokenType.DIV,
-                                  TokenType.MOD]:
+        if self.curr_token.id in {TokenType.MULT, TokenType.DIV,
+                                  TokenType.MOD}:
             self.consome(self.curr_token.id)
             self.uno()
             self.resto_mult()
+            return Result(False)
+        return Result(True)
 
     def uno(self):
-        if self.curr_token.id in [TokenType.PLUS, TokenType.SUB]:
+        if self.curr_token.id in {TokenType.PLUS, TokenType.SUB}:
             self.consome(self.curr_token.id)
-            self.uno()
+            return self.uno()
         else:
-            self.fator()
+            return self.fator()
 
     def fator(self):
-        if self.curr_token.id in [TokenType.NUMINT, TokenType.NUMFLOAT,
-                                  TokenType.IDENT]:
+        if self.curr_token.id in {TokenType.NUMINT, TokenType.NUMFLOAT,
+                                  TokenType.IDENT}:
+            result = Result(self.curr_token.id == TokenType.IDENT)
             self.consome(self.curr_token.id)
+            return result
         else:
             self.consome(TokenType.OPAR)
             self.atrib()
             self.consome(TokenType.CPAR)
+            return Result(False)
 
     def consome(self, tok):
-        if (self.curr_token.id == tok):
+        if self.curr_token.id == tok:
             if self.curr_token.id == TokenType.EOF:
                 return
             else:
                 self.curr_token = self.lexer.get_token()
         else:
-            raise Exception(
-                f'Parser error: line {self.curr_token.row}, '
-                f'column {self.curr_token.col}: '
-                f'expected {tok} found {self.curr_token.name}')
+            self.error(f'expected {tok} found {self.curr_token.name}')

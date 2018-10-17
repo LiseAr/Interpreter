@@ -7,7 +7,8 @@
 
 int main() {
 	int num, div, resto;
-	scan("Entre com o inteiro:", num);
+	print("Entre com o inteiro:");
+	scan(num);
 
 	print("Fatorando...\n");
 	print(num, " = ");

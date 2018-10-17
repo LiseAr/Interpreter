@@ -9,14 +9,14 @@ class File:
     def __init__(self, file_name):
         self.file_name = file_name
         self.line = ''
-        self.fd = open(file_name, 'r')
+        self.file = open(file_name, 'r')
 
     def readline(self):
-        self.line = self.fd.readline()
+        self.line = self.file.readline()
         return self.line
 
     def close(self):  # TODO: close automatically
-        self.fd.close()
+        self.file.close()
 
 
 class State(Enum):
@@ -231,7 +231,7 @@ class Lexer:
                     line = self._file.readline()
                     self.row += 1
                     self.buffer = ''
-                    self.col == 1
+                    self.col = 1
                     previous_state = current_state = State.INIT
                 elif current_state != State.OPER2 or \
                         Token.get_token_type(self.buffer+line[0]) is not None:
@@ -239,7 +239,7 @@ class Lexer:
                     line = line[1:]
                     self.col += 1
                 else:
-                    current_state == State.FIN
+                    current_state = State.FIN
 
             if current_state == State.INIT:
                 if symb == Symbol.SPACE:
