@@ -11,8 +11,10 @@ class ParserError(Exception):
 
 
 class Result:
-    def __init__(self, lvalue=False):
+    def __init__(self, lvalue=False, type=None, ident_list=None):
         self.lvalue = lvalue
+        self.type = type
+        self.ident_list = ident_list
 
 
 def rule(func):
@@ -32,6 +34,7 @@ class Parser:
         self.curr_token: Token
         self.lexer = lexer
         self.tree = ParserTree()
+        self.symbol_table = {}
 
     def parse(self):
         self._function()
@@ -72,7 +75,9 @@ class Parser:
 
     @rule
     def _type(self):
-        self._consome(self.curr_token.id)
+        token_id = self.curr_token.id
+        self._consome(token_id)
+        return Result(type=token_id)
 
     @rule
     def _bloco(self):
@@ -122,21 +127,30 @@ class Parser:
 
     @rule
     def _declaration(self):
-        self._type()
-        self._ident_list()
+        result = self._type()
+        result.ident_list = self._ident_list().ident_list
         self._consome(TokenType.SEMICOLON)
+        for name in result.ident_list:
+            self.symbol_table[name] = result.type
 
     @rule
     def _ident_list(self):
+        ident_name = self.curr_token.name
         self._consome(TokenType.IDENT)
-        self._resto_ident_list()
+        result = self._resto_ident_list()
+        result.ident_list.append(ident_name)
+        return result
 
     @rule
     def _resto_ident_list(self):
         if self.curr_token.id == TokenType.COMMA:
             self._consome(TokenType.COMMA)
+            ident_name = self.curr_token.name
             self._consome(TokenType.IDENT)
-            self._resto_ident_list()
+            result = self._resto_ident_list()
+            result.ident_list.append(ident_name)
+            return result
+        return Result(ident_list=[])
 
     @rule
     def _for_stmt(self):
