@@ -341,6 +341,9 @@ class Parser:
         return self._fator()
 
     @rule
+
+    # nara linda! <3 bjs duds
+    
     def _fator(self):
         if self.curr_token.id == TokenType.OPAR:
             self._consome(TokenType.OPAR)
