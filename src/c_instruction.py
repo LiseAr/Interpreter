@@ -66,5 +66,8 @@ class Instruction:
     def call(name: str, *args) -> 'Instruction':
         return Instruction.factory(OpCode.CALL, name, *args)
 
-    def __repr__(self):
+    def __str__(self):
         return f'({self.opcode.value}, {", ".join(str(a) for a in self.args)})'
+
+    def __repr__(self):
+        return f'Instruction{self.__str__()}'

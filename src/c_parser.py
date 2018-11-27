@@ -76,10 +76,13 @@ class Parser:
 
     def parse(self):
         self.curr_token = self.lexer.get_token()
-        self._function()
+        result = self._function()
         if ParserFeatures.TREE_DOT_GENERATION in self.features:
             with open('tree.dot', 'w') as file:
                 file.write(str(self.tree))
+        if ParserFeatures.CODE_GENERATION in self.features:
+            with open('code.out', 'w') as file:
+                file.write('\n'.join(str(c) for c in result.code[0][0]))
 
     @rule_head
     def _function(self):

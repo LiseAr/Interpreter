@@ -118,6 +118,7 @@ class CodeGenerator:
 
     def stmt_declaration(self, result: Result) -> Result:
         """<stmt> -> <declaration>"""
+        result.code.append(([], None))
         return result
 
     def stmt_null(self, result: Result) -> Result:
