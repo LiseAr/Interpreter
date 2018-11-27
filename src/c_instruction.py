@@ -66,6 +66,10 @@ class Instruction:
     def call(name: str, *args) -> 'Instruction':
         return Instruction.factory(OpCode.CALL, name, *args)
 
+    def change_arg(self, index: int, value):
+        self.args = tuple(a if i != index else value
+                          for i, a in enumerate(self.args))
+
     def __str__(self):
         return f'({self.opcode.value}, {", ".join(str(a) for a in self.args)})'
 

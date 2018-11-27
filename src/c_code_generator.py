@@ -191,7 +191,7 @@ class CodeGenerator:
 
     def _out_list(self, result: Result) -> Result:
         resto_code = result.code.pop()[0]
-        code = [Instruction.call('print', result.value)]
+        code = [Instruction.call('print', result.value.pop())]
         code.extend(resto_code)
         result.code.append((code, None))
         return result
@@ -433,11 +433,13 @@ class CodeGenerator:
         if resto:
             left = self._generate_temp()
             dest = left
-        else:
-            left = 0
+            code.append(Instruction.operation(operator, left, value,
+                                              resto_value))
+        elif resto_code:
             dest = self._expression_result
-            operator = '+'
-        code.append(Instruction.operation(operator, left, value, resto_value))
+            resto_code[0].change_arg(0, value)
+        else:
+            dest = value
         code.extend(resto_code)
         result.code.append((code, dest))
         return result
