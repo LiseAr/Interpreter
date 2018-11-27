@@ -9,8 +9,9 @@ class VirtualMachine:
     def __init__(self):
         self._code: List[Instruction]
         self._labels = {}
-        self._pc = 0
         self._symbols = {}
+        self._pc = 0
+        self._last_line_empty = True
 
     def run(self, code: List[Instruction]):
         self._code = code
@@ -19,7 +20,8 @@ class VirtualMachine:
             method = VirtualMachine.HANDLERS[code[self._pc].opcode]
             method(self, *code[self._pc].args)
             self._pc += 1
-        print()
+        if not self._last_line_empty:
+            print()
 
     def _plus(self, oper1, oper2, dest):
         self._operation(oper1, oper2, dest, operator.add)
@@ -78,7 +80,9 @@ class VirtualMachine:
         self._pc = self._labels[label]
 
     def _call(self, command, arg1, arg2=None):
-        print(self._format(arg1), end='')
+        string = self._format(arg1)
+        print(string, end='')
+        self._last_line_empty = string.endswith('\n')
         if command == 'scan':
             self._symbols[arg2] = float(input())
 

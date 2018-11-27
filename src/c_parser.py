@@ -241,6 +241,8 @@ class Parser:
             result = self._produce(self._type, self._ident_list,
                                    TokenType.SEMICOLON)
             for name in result.value:
+                if name in self.symbol_table:
+                    self._error(f'Redeclaration of variable {name}')
                 self.symbol_table[name] = result.type_
             return result
         return declaration(self)
