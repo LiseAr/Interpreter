@@ -1,48 +1,31 @@
-from enum import auto, Enum
+from enum import Enum, unique
 from typing import Union
 
 
 Operand = Union[int, float, str]
 
 
+@unique
 class OpCode(Enum):
     """OpCodes for the virtual machine."""
-    PLUS = auto()
-    MINUS = auto()
-    MULT = auto()
-    DIV = auto()
-    MOD = auto()
-    EQ = auto()
-    NEQ = auto()
-    GT = auto()
-    GEQ = auto()
-    LT = auto()
-    LEQ = auto()
-    AND = auto()
-    OR = auto()
-    NOT = auto()
-    LABEL = auto()
-    IF = auto()
-    JUMP = auto()
-    CALL = auto()
-
-
-OPERATION = {
-    '+': OpCode.PLUS,
-    '-': OpCode.MINUS,
-    '*': OpCode.MULT,
-    '/': OpCode.DIV,
-    '%': OpCode.MOD,
-    '==': OpCode.EQ,
-    '!=': OpCode.NEQ,
-    '>': OpCode.GT,
-    '>=': OpCode.GEQ,
-    '<': OpCode.LT,
-    '<=': OpCode.LEQ,
-    '&&': OpCode.AND,
-    '||': OpCode.OR,
-    '!': OpCode.NOT
-}
+    PLUS = '+'
+    MINUS = '-'
+    MULT = '*'
+    DIV = '/'
+    MOD = '%'
+    EQ = '=='
+    NEQ = '!='
+    GT = '>'
+    GEQ = '>='
+    LT = '<'
+    LEQ = '<='
+    AND = '&&'
+    OR = '||'
+    NOT = '!'
+    LABEL = 'label'
+    IF = 'if'
+    JUMP = 'jump'
+    CALL = 'call'
 
 
 class Instruction:
@@ -61,11 +44,11 @@ class Instruction:
     @staticmethod
     def operation(operator: str, op1: Operand, op2: Operand,
                   result: str) -> 'Instruction':
-        return Instruction.factory(OPERATION[operator], op1, op2, result)
+        return Instruction.factory(OpCode(operator), op1, op2, result)
 
     @staticmethod
     def unary(operator: str, operand, result: str) -> 'Instruction':
-        return Instruction.factory(OPERATION[operator], operand, result)
+        return Instruction.factory(OpCode(operator), operand, result)
 
     @staticmethod
     def label(name: str) -> 'Instruction':
@@ -80,5 +63,8 @@ class Instruction:
         return Instruction.factory(OpCode.JUMP, label)
 
     @staticmethod
-    def call(name: str) -> 'Instruction':
-        return Instruction.factory(OpCode.CALL, name)
+    def call(name: str, *args) -> 'Instruction':
+        return Instruction.factory(OpCode.CALL, name, *args)
+
+    def __repr__(self):
+        return f'({self.opcode.value}, {", ".join(str(a) for a in self.args)})'

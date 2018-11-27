@@ -12,9 +12,9 @@ class ParserTree:
         self._xlabels = {}
 
     def push(self, name: str):
-        identifier = f'{name}{next(self._node_count)}'
-        label = f'〈{name.strip("_")}〉'
-        self._labels[identifier] = label
+        identifier = (name, str(next(self._node_count)))
+        label = f'〈{name}〉'
+        self._labels[''.join(identifier)] = label
         self._call_stack.append(identifier)
         if len(self._call_stack) >= 2:
             self._edges.append(tuple(self._call_stack[-2:]))
@@ -22,8 +22,11 @@ class ParserTree:
     def pop(self):
         self._call_stack.pop()
 
+    def print_stack(self):
+        return ' -> '.join(s[0] for s in self._call_stack)
+
     def put_token(self, token: str):
-        xlabels = self._xlabels.setdefault(self._call_stack[-1], [])
+        xlabels = self._xlabels.setdefault(''.join(self._call_stack[-1]), [])
         xlabels.append(token)
 
     def __str__(self):
@@ -38,6 +41,7 @@ class ParserTree:
             'graph {',
             '\n'.join(f'{i} [label=<{l}{_xlabel(i)}>];'
                       for i, l in self._labels.items()),
-            '\n'.join(' -- '.join(e) for e in self._edges),
+            '\n'.join(' -- '.join(e) for e in
+                      ((''.join(v[0]), ''.join(v[1])) for v in self._edges)),
             '}'
         ])
