@@ -9,6 +9,7 @@ from c_lexer import Lexer
 from c_parser_result import Result
 from c_parser_tree import ParserTree
 from c_token import Token, TokenType
+from c_virtual_machine import VirtualMachine
 
 
 class ParserError(Exception):
@@ -62,17 +63,21 @@ class ParserFeatures(Flag):
     NONE = 0
     TREE_DOT_GENERATION = auto()
     CODE_GENERATION = auto()
-    DEFAULT = TREE_DOT_GENERATION | CODE_GENERATION
+    SAVE_CODE_TO_FILE = auto()
+    EXECUTE_CODE = auto()
+    DEFAULT = (TREE_DOT_GENERATION | CODE_GENERATION |
+               SAVE_CODE_TO_FILE | EXECUTE_CODE)
 
 
 class Parser:
-    def __init__(self, lexer: Lexer):
+    def __init__(self, lexer: Lexer, features=ParserFeatures.DEFAULT):
         self.curr_token: Token
         self.code_generator = CodeGenerator()
-        self.features = ParserFeatures.DEFAULT
+        self.features = features
         self.lexer = lexer
-        self.tree = ParserTree()
         self.symbol_table = {}
+        self.tree = ParserTree()
+        self.virtual_machine = VirtualMachine()
 
     def parse(self):
         self.curr_token = self.lexer.get_token()
@@ -81,8 +86,11 @@ class Parser:
             with open('tree.dot', 'w') as file:
                 file.write(str(self.tree))
         if ParserFeatures.CODE_GENERATION in self.features:
-            with open('code.out', 'w') as file:
-                file.write('\n'.join(str(c) for c in result.code[0][0]))
+            if ParserFeatures.SAVE_CODE_TO_FILE in self.features:
+                with open('code.out', 'w') as file:
+                    file.write('\n'.join(str(c) for c in result.code[0][0]))
+            if ParserFeatures.EXECUTE_CODE in self.features:
+                self.virtual_machine.run(result.code[0][0])
 
     @rule_head
     def _function(self):
