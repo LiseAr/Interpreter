@@ -1,3 +1,4 @@
+import sys
 from collections.abc import Collection
 from enum import auto, Flag
 from functools import partial, wraps
@@ -98,7 +99,7 @@ class Parser:
                 with open('code.out', 'w') as file:
                     file.write('\n'.join(str(c) for c in result.code[0][0]))
             if ParserFeatures.EXECUTE_CODE in self.features:
-                self.virtual_machine.run(result.code[0][0])
+                self.virtual_machine.run(result.code[0][0], *sys.argv[2:])
 
     @rule_head
     def _function(self):

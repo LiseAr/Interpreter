@@ -18,6 +18,7 @@ class CodeGenerator:
     def __init__(self):
         self._label_gen = name_generator('__label__')
         self._temp_gen = name_generator('__temp__')
+        self._count = 0
         self._expression_result = None
         self._return_label = self._generate_label()
         self._last_operator = ''
@@ -29,12 +30,30 @@ class CodeGenerator:
     def _generate_temp(self):
         return next(self._temp_gen)
 
+    def function_pre(self):
+        """Called before function."""
+        self._count = -1
+
     def function(self, result: Result) -> Result:
         """<function> -> <type> 'IDENT' '(' <argList> ')' <bloco>"""
+        bloco_code = result.code.pop()[0]
+        code = result.code.pop()[0]
+        code.extend(bloco_code)
+        result.code.append((code, None))
         return result
+
+    def arg_list_pre(self):
+        """Called before arg_list."""
+        self._count += 1
 
     def arg_list(self, result: Result) -> Result:
         """<argList> -> <arg> <restoArgList>"""
+        ident = CodeGenerator._get_ident_or_value(result)
+        code = [Instruction.operation('+', 0, f'__arg__{self._count}', ident)]
+        self._count -= 1
+        if result.code:
+            code.extend(result.code.pop()[0])
+        result.code.append((code, None))
         return result
 
     def arg_list_empty(self, result: Result) -> Result:
@@ -50,7 +69,7 @@ class CodeGenerator:
         return result
 
     def resto_arg_list_empty(self, result: Result) -> Result:
-        """<restoArgList> -> ',' <argList>"""
+        """<restoArgList> -> &"""
         return result
 
     def type_(self, result: Result) -> Result:
@@ -183,7 +202,7 @@ class CodeGenerator:
 
     def io_stmt_scan(self, result: Result) -> Result:
         """<ioStmt> -> 'scan' '(' 'STR' ',' 'IDENT' ')' ';'"""
-        ident = '__{1}__{0}'.format(*result.value.pop())
+        ident = CodeGenerator._get_ident_or_value(result)
         command = f'scan_{result.type_.value}'
         code = [Instruction.call(command, result.value.pop(), ident)]
         result.code.append((code, None))
@@ -195,9 +214,7 @@ class CodeGenerator:
 
     def _out_list(self, result: Result) -> Result:
         resto_code = result.code.pop()[0]
-        value = result.value.pop()
-        if isinstance(value, tuple):
-            value = '__{1}__{0}'.format(*value)
+        value = CodeGenerator._get_ident_or_value(result)
         code = [Instruction.call('print', value)]
         code.extend(resto_code)
         result.code.append((code, None))
@@ -424,7 +441,8 @@ class CodeGenerator:
 
     def fator_ident(self, result: Result) -> Result:
         """<fator> -> 'IDENT'"""
-        result.code.append(([], '__{1}__{0}'.format(*result.value.pop())))
+        ident = CodeGenerator._get_ident_or_value(result)
+        result.code.append(([], ident))
         return result
 
     def fator_num(self, result: Result) -> Result:
@@ -465,3 +483,10 @@ class CodeGenerator:
         self._last_operator = ''
         result.code.append(([], self._expression_result))
         return result
+
+    @staticmethod
+    def _get_ident_or_value(result: Result) -> str:
+        value = result.value.pop()
+        if isinstance(value, tuple):
+            value = '__{1}__{0}'.format(*value)
+        return value

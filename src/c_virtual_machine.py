@@ -5,18 +5,30 @@ from typing import List
 from c_instruction import Instruction, OpCode
 
 
+def to_number(string):
+    try:
+        return int(string)
+    except ValueError:
+        try:
+            return float(string)
+        except ValueError:
+            return string
+
+
 class VirtualMachine:
     HANDLERS: dict
 
     def __init__(self):
         self._code: List[Instruction]
-        self._labels = {}
-        self._symbols = {}
+        self._labels = dict
+        self._symbols = dict
         self._pc = 0
         self._last_line_empty = True
 
-    def run(self, code: List[Instruction]):
+    def run(self, code: List[Instruction], *args):
         self._code = code
+        self._symbols = {f'__arg__{i}': to_number(v)
+                         for i, v in enumerate(args)}
         self._read_labels()
         while self._pc < len(code):
             method = VirtualMachine.HANDLERS[code[self._pc].opcode]
@@ -110,6 +122,7 @@ class VirtualMachine:
         return str(self._symbols[value])
 
     def _read_labels(self):
+        self._labels = {}
         for i, instruction in enumerate(self._code):
             if instruction.opcode == OpCode.LABEL:
                 self._labels[instruction.args[0]] = i
