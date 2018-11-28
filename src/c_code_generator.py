@@ -181,7 +181,8 @@ class CodeGenerator:
 
     def io_stmt_scan(self, result: Result) -> Result:
         """<ioStmt> -> 'scan' '(' 'STR' ',' 'IDENT' ')' ';'"""
-        code = [Instruction.call('scan', result.value[0], result.value[1])]
+        ident = '__{1}__{0}'.format(*result.value.pop())
+        code = [Instruction.call('scan', result.value.pop(), ident)]
         result.code.append((code, None))
         return result
 
@@ -191,7 +192,10 @@ class CodeGenerator:
 
     def _out_list(self, result: Result) -> Result:
         resto_code = result.code.pop()[0]
-        code = [Instruction.call('print', result.value.pop())]
+        value = result.value.pop()
+        if isinstance(value, tuple):
+            value = '__{1}__{0}'.format(*value)
+        code = [Instruction.call('print', value)]
         code.extend(resto_code)
         result.code.append((code, None))
         return result
@@ -414,7 +418,7 @@ class CodeGenerator:
 
     def fator_ident(self, result: Result) -> Result:
         """<fator> -> 'IDENT'"""
-        result.code.append(([], result.value.pop()))
+        result.code.append(([], '__{1}__{0}'.format(*result.value.pop())))
         return result
 
     def fator_num(self, result: Result) -> Result:

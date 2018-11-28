@@ -8,6 +8,7 @@ from c_grammar import FIRST, FOLLOW
 from c_lexer import Lexer
 from c_parser_result import Result
 from c_parser_tree import ParserTree
+from c_symbol_table import SymbolTable
 from c_token import Token, TokenType
 from c_virtual_machine import VirtualMachine
 
@@ -32,25 +33,32 @@ def rule_head(method):
     return new_method
 
 
-def rule(function=None, *, lvalue=None):
+def rule(function=None, *, new_scope=False, lvalue=None):
     if function is None:
-        return partial(rule, lvalue=lvalue)
+        return partial(rule, new_scope=new_scope, lvalue=lvalue)
 
     method_name = f'{function.__name__.rstrip("_")}'
     pre_method_name = f'{method_name}_pre'
 
-    def new_function(parser) -> Result:
+    def new_function(parser: 'Parser') -> Result:
+        if new_scope:
+            parser.symbol_table.enter_block()
+
+        pre_method = code_method = None
         if ParserFeatures.CODE_GENERATION in parser.features:
             code_method = getattr(
                 parser.code_generator, method_name,
                 getattr(parser.code_generator, f'{method_name}_', None))
             pre_method = getattr(parser.code_generator, pre_method_name, None)
 
-            if pre_method is not None:
-                pre_method()
-            result = code_method(function(parser))
-        else:
-            result = function(parser)
+        if pre_method is not None:
+            pre_method()
+        result = function(parser)
+        if code_method is not None:
+            result = code_method(result)
+
+        if new_scope:
+            parser.symbol_table.leave_block()
 
         if lvalue is not None:
             result.lvalue = lvalue
@@ -75,7 +83,7 @@ class Parser:
         self.code_generator = CodeGenerator()
         self.features = features
         self.lexer = lexer
-        self.symbol_table = {}
+        self.symbol_table = SymbolTable()
         self.tree = ParserTree()
         self.virtual_machine = VirtualMachine()
 
@@ -94,7 +102,7 @@ class Parser:
 
     @rule_head
     def _function(self):
-        @rule
+        @rule(new_scope=True)
         def function(_parser):
             return self._produce(
                 self._type, TokenType.IDENT, TokenType.OPAR, self._arg_list,
@@ -145,7 +153,7 @@ class Parser:
 
     @rule_head
     def _bloco(self):
-        @rule
+        @rule(new_scope=True)
         def bloco(_parser):
             return self._produce(TokenType.OBRKT, self._stmt_list,
                                  TokenType.CBRKT)
@@ -240,8 +248,9 @@ class Parser:
         def declaration(_parser):
             result = self._produce(self._type, self._ident_list,
                                    TokenType.SEMICOLON)
-            for name in result.value:
-                if name in self.symbol_table:
+            for name, depth in result.value:
+                full_name = f'__{depth}__{name}'
+                if full_name in self.symbol_table:
                     self._error(f'Redeclaration of variable {name}')
                 self.symbol_table[name] = result.type_
             return result
@@ -271,7 +280,7 @@ class Parser:
 
     @rule_head
     def _for_stmt(self):
-        @rule
+        @rule(new_scope=True)
         def for_stmt(_parser):
             return self._produce(
                 TokenType.FOR, TokenType.OPAR, self._opt_expr,
@@ -628,7 +637,11 @@ class Parser:
             if found in (TokenType.INT, TokenType.FLOAT):
                 result.type_ = found
             value = self.curr_token.value
-            if value is not None:
+            if found == TokenType.IDENT:
+                depth = self.symbol_table.depth_of(value,
+                                                   self.symbol_table.depth)
+                result.value.append((value, depth))
+            elif value is not None:
                 result.value.append(value)
             self.tree.put_token(self.curr_token.name)
             self.curr_token = self.lexer.get_token()
