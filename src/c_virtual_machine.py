@@ -6,6 +6,8 @@ from c_instruction import Instruction, OpCode
 
 
 class VirtualMachine:
+    HANDLERS: dict
+
     def __init__(self):
         self._code: List[Instruction]
         self._labels = {}
@@ -35,32 +37,36 @@ class VirtualMachine:
     def _div(self, oper1, oper2, dest):
         self._operation(oper1, oper2, dest, operator.truediv)
 
+    def _idiv(self, oper1, oper2, dest):
+        self._operation(oper1, oper2, dest,
+                        lambda x, y: int(operator.floordiv(x, y)))
+
     def _mod(self, oper1, oper2, dest):
-        self._operation(oper1, oper2, dest, operator.mod)
+        self._operation(oper1, oper2, dest, operator.mod, to_int=True)
 
-    def _equal(self, oper1, oper2, dest):
-        self._operation(oper1, oper2, dest, operator.eq, logic=True)
+    def _eq(self, oper1, oper2, dest):
+        self._operation(oper1, oper2, dest, operator.eq, to_int=True)
 
-    def _not_equal(self, oper1, oper2, dest):
-        self._operation(oper1, oper2, dest, operator.ne, logic=True)
+    def _neq(self, oper1, oper2, dest):
+        self._operation(oper1, oper2, dest, operator.ne, to_int=True)
 
-    def _greater_than(self, oper1, oper2, dest):
-        self._operation(oper1, oper2, dest, operator.gt, logic=True)
+    def _gt(self, oper1, oper2, dest):
+        self._operation(oper1, oper2, dest, operator.gt, to_int=True)
 
-    def _greater_equal(self, oper1, oper2, dest):
-        self._operation(oper1, oper2, dest, operator.ge, logic=True)
+    def _geq(self, oper1, oper2, dest):
+        self._operation(oper1, oper2, dest, operator.ge, to_int=True)
 
-    def _less_then(self, oper1, oper2, dest):
-        self._operation(oper1, oper2, dest, operator.lt, logic=True)
+    def _lt(self, oper1, oper2, dest):
+        self._operation(oper1, oper2, dest, operator.lt, to_int=True)
 
-    def _less_equal(self, oper1, oper2, dest):
-        self._operation(oper1, oper2, dest, operator.le, logic=True)
+    def _leq(self, oper1, oper2, dest):
+        self._operation(oper1, oper2, dest, operator.le, to_int=True)
 
     def _and(self, oper1, oper2, dest):
-        self._operation(oper1, oper2, dest, operator.and_, logic=True)
+        self._operation(oper1, oper2, dest, operator.and_, to_int=True)
 
     def _or(self, oper1, oper2, dest):
-        self._operation(oper1, oper2, dest, operator.or_, logic=True)
+        self._operation(oper1, oper2, dest, operator.or_, to_int=True)
 
     def _not(self, oper, dest):
         val = self._get_variables(oper)
@@ -108,10 +114,10 @@ class VirtualMachine:
             if instruction.opcode == OpCode.LABEL:
                 self._labels[instruction.args[0]] = i
 
-    def _operation(self, oper1, oper2, dest, operator_, logic=False):
+    def _operation(self, oper1, oper2, dest, operator_, to_int=False):
         val1, val2 = self._get_variables(oper1, oper2)
         result = operator_(val1, val2)
-        if logic:
+        if to_int:
             self._symbols[dest] = int(result)
         else:
             self._symbols[dest] = result
@@ -125,23 +131,6 @@ class VirtualMachine:
                 values[i] = self._symbols[value]
         return values if len(values) > 1 else values[0]
 
-    HANDLERS = {
-        OpCode.PLUS: _plus,
-        OpCode.MINUS: _minus,
-        OpCode.MULT: _mult,
-        OpCode.DIV: _div,
-        OpCode.MOD: _mod,
-        OpCode.EQ: _equal,
-        OpCode.NEQ: _not_equal,
-        OpCode.GT: _greater_than,
-        OpCode.GEQ: _greater_equal,
-        OpCode.LT: _less_then,
-        OpCode.LEQ: _less_equal,
-        OpCode.AND: _and,
-        OpCode.OR: _or,
-        OpCode.NOT: _not,
-        OpCode.LABEL: _label,
-        OpCode.IF: _if,
-        OpCode.JUMP: _jump,
-        OpCode.CALL: _call
-    }
+
+VirtualMachine.HANDLERS = {oc: getattr(VirtualMachine, f'_{oc.name.lower()}')
+                           for oc in OpCode}

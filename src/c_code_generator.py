@@ -1,8 +1,9 @@
 from collections import namedtuple
 from itertools import count
 
+from c_instruction import Instruction, OpCode
 from c_parser_result import Result
-from c_instruction import Instruction
+from c_token import TokenType as T
 
 
 LoopLabels = namedtuple('LoopLabels', ['break_', 'continue_'])
@@ -19,6 +20,7 @@ class CodeGenerator:
         self._temp_gen = name_generator('__temp__')
         self._expression_result = None
         self._return_label = self._generate_label()
+        self._last_operator = ''
         self._loop_stack = []
 
     def _generate_label(self):
@@ -244,12 +246,15 @@ class CodeGenerator:
         else_code, else_label = result.code.pop()
         stmt_code, _ = result.code.pop()
         expr_code, expr_value = result.code.pop()
-        if_label = self._generate_label()
+        if_label, after = (self._generate_label() for _ in range(2))
         code = expr_code
         code.append(Instruction.if_(expr_value, if_label, else_label))
         code.append(Instruction.label(if_label))
         code.extend(stmt_code)
+        code.append(Instruction.jump(after))
+        code.append(Instruction.label(else_label))
         code.extend(else_code)
+        code.append(Instruction.label(after))
         result.code.append((code, None))
         return result
 
@@ -435,21 +440,28 @@ class CodeGenerator:
               resto: bool) -> Result:
         resto_code, resto_value = result.code.pop()
         code, value = result.code.pop()
+
+        if self._last_operator == '/' and result.type_ == T.INT:
+            resto_code[0].opcode = OpCode.IDIV
+
         if resto:
             left = self._generate_temp()
             dest = left
             code.append(Instruction.operation(operator, left, value,
                                               resto_value))
+            self._last_operator = operator
         elif resto_code:
             dest = self._expression_result
             resto_code[0].change_arg(0, value)
         else:
             dest = value
+
         code.extend(resto_code)
         result.code.append((code, dest))
         return result
 
     def _empty(self, result: Result) -> Result:
         self._expression_result = self._generate_temp()
+        self._last_operator = ''
         result.code.append(([], self._expression_result))
         return result
