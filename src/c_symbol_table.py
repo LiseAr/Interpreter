@@ -24,8 +24,11 @@ class SymbolTable:
             raise KeyError(f'{symbol} not found.')
         return default
 
-    def __contains__(self, symbol):
+    def current_block_contains(self, symbol):
         return self._stack and symbol in self._stack[-1]
+
+    def __contains__(self, symbol):
+        return any(symbol in table for table in reversed(self._stack))
 
     def __getitem__(self, key):
         if isinstance(key, tuple):

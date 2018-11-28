@@ -113,7 +113,9 @@ class Parser:
     def _arg_list(self):
         @rule
         def arg_list(_parser):
-            return self._produce(self._arg, self._resto_arg_list)
+            result = self._produce(self._arg, self._resto_arg_list)
+            self._declare_variables(result)
+            return result
 
         @rule
         def arg_list_empty(_parser):
@@ -248,11 +250,7 @@ class Parser:
         def declaration(_parser):
             result = self._produce(self._type, self._ident_list,
                                    TokenType.SEMICOLON)
-            for name, depth in result.value:
-                full_name = f'__{depth}__{name}'
-                if full_name in self.symbol_table:
-                    self._error(f'Redeclaration of variable {name}')
-                self.symbol_table[name] = result.type_
+            self._declare_variables(result)
             return result
         return declaration(self)
 
@@ -390,7 +388,7 @@ class Parser:
     @rule_head
     def _atrib(self):
         def check_lvalue(results):
-            if results[0].lvalue and not results[1].lvalue:
+            if not results[0].lvalue and results[1].lvalue:
                 self._error('Expression before = is not a lvalue.')
 
         @rule
@@ -611,7 +609,10 @@ class Parser:
     def _fator(self):
         @rule(lvalue=True)
         def fator_ident(_parser):
-            return self._produce(TokenType.IDENT)
+            result = self._produce(TokenType.IDENT)
+            if result.value[0][0] not in self.symbol_table:
+                self._error(f'Symbol {result.value[0][0]} not defined.')
+            return result
 
         @rule(lvalue=False)
         def fator_num(_parser):
@@ -660,6 +661,13 @@ class Parser:
         if callback is not None:
             callback(results)
         return sum(results)
+
+    def _declare_variables(self, result: Result):
+        for name, depth in result.value:
+            full_name = f'__{depth}__{name}'
+            if self.symbol_table.current_block_contains(full_name):
+                self._error(f'Redeclaration of variable {name}')
+            self.symbol_table[name] = result.type_
 
     def _error(self, msg):
         raise ParserError(f'Parser error: line {self.curr_token.row}, '

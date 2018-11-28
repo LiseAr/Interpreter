@@ -12,6 +12,7 @@ class OpCode(Enum):
     MINUS = '-'
     MULT = '*'
     DIV = '/'
+    IDIV = '//'
     MOD = '%'
     EQ = '=='
     NEQ = '!='
