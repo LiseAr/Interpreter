@@ -182,7 +182,8 @@ class CodeGenerator:
     def io_stmt_scan(self, result: Result) -> Result:
         """<ioStmt> -> 'scan' '(' 'STR' ',' 'IDENT' ')' ';'"""
         ident = '__{1}__{0}'.format(*result.value.pop())
-        code = [Instruction.call('scan', result.value.pop(), ident)]
+        command = f'scan_{result.type_.value}'
+        code = [Instruction.call(command, result.value.pop(), ident)]
         result.code.append((code, None))
         return result
 

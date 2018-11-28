@@ -82,13 +82,17 @@ class VirtualMachine:
     def _call(self, command, arg1, arg2=None):
         string = self._format(arg1)
         print(string, end='')
-        self._last_line_empty = string.endswith('\n')
-        if command == 'scan':
+        if command == 'print':
+            self._last_line_empty = string.endswith('\n')
+        elif command == 'scan_int':
             string = input()
             try:
-                self._symbols[arg2] = int(string)
+                value = int(string)
             except ValueError:
-                self._symbols[arg2] = float(string)
+                value = int(float(string))
+            self._symbols[arg2] = value
+        elif command == 'scan_float':
+            self._symbols[arg2] = float(input())
 
     def _format(self, value: str):
         if not isinstance(value, str):
