@@ -37,7 +37,10 @@ class CodeGenerator:
     def function(self, result: Result) -> Result:
         """<function> -> <type> 'IDENT' '(' <argList> ')' <bloco>"""
         bloco_code = result.code.pop()[0]
-        code = result.code.pop()[0]
+        if result.code:
+            code = result.code.pop()[0]
+        else:
+            code = []
         code.extend(bloco_code)
         result.code.append((code, None))
         return result

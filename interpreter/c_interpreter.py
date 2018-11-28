@@ -1,4 +1,5 @@
 from sys import argv
+
 from c_lexer import Lexer, LexerError
 from c_parser import Parser, ParserError
 

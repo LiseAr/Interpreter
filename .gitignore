@@ -1,5 +1,5 @@
 .vscode/.*
-__*
+__pycache__
 *.dot
 *.png
 *.out

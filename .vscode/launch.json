@@ -8,8 +8,8 @@
             "name": "Python: Run",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/src/c_interpreter.py",
-            "args": ["etc/ex.c"]
+            "program": "${workspaceFolder}/interpreter/c_interpreter.py",
+            "args": ["tests/minic/ex.c"]
         },
         {
             "name": "Python: Current File (Integrated Terminal)",

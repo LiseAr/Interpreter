@@ -1,4 +1,5 @@
 from enum import auto, Enum
+
 from c_token import Token, TokenType
 
 

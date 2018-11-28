@@ -1,7 +1,6 @@
 from enum import Enum, unique
 from typing import Union
 
-
 Operand = Union[int, float, str]
 
 
