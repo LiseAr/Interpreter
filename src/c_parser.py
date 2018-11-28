@@ -9,7 +9,7 @@ from c_lexer import Lexer
 from c_parser_result import Result
 from c_parser_tree import ParserTree
 from c_symbol_table import SymbolTable
-from c_token import Token, TokenType
+from c_token import Token, TokenType as T
 from c_virtual_machine import VirtualMachine
 
 
@@ -104,9 +104,8 @@ class Parser:
     def _function(self):
         @rule(new_scope=True)
         def function(_parser):
-            return self._produce(
-                self._type, TokenType.IDENT, TokenType.OPAR, self._arg_list,
-                TokenType.CPAR, self._bloco, TokenType.EOF)
+            return self._produce(self._type, T.IDENT, T.OPAR, self._arg_list,
+                                 T.CPAR, self._bloco, T.EOF)
         return function(self)
 
     @rule_head
@@ -121,7 +120,7 @@ class Parser:
         def arg_list_empty(_parser):
             return Result()
 
-        if self.curr_token.id in Parser._arg_list.first:
+        if self.curr_token.type_ in Parser._arg_list.first:
             return arg_list(self)
         return arg_list_empty(self)
 
@@ -129,20 +128,20 @@ class Parser:
     def _arg(self):
         @rule
         def arg(_parser):
-            return self._produce(self._type, TokenType.IDENT)
+            return self._produce(self._type, T.IDENT)
         return arg(self)
 
     @rule_head
     def _resto_arg_list(self):
         @rule
         def resto_arg_list(_parser):
-            return self._produce(TokenType.COMMA, self._arg_list)
+            return self._produce(T.COMMA, self._arg_list)
 
         @rule
         def resto_arg_list_empty(_parser):
             return Result()
 
-        if self.curr_token.id in Parser._resto_arg_list.first:
+        if self.curr_token.type_ in Parser._resto_arg_list.first:
             return resto_arg_list(self)
         return resto_arg_list_empty(self)
 
@@ -150,15 +149,14 @@ class Parser:
     def _type(self):
         @rule
         def type_(_parser):
-            return self._produce({TokenType.INT, TokenType.FLOAT})
+            return self._produce({T.INT, T.FLOAT})
         return type_(self)
 
     @rule_head
     def _bloco(self):
         @rule(new_scope=True)
         def bloco(_parser):
-            return self._produce(TokenType.OBRKT, self._stmt_list,
-                                 TokenType.CBRKT)
+            return self._produce(T.OBRKT, self._stmt_list, T.CBRKT)
         return bloco(self)
 
     @rule_head
@@ -171,7 +169,7 @@ class Parser:
         def stmt_list_empty(_parser):
             return Result()
 
-        if self.curr_token.id in Parser._stmt_list.first:
+        if self.curr_token.type_ in Parser._stmt_list.first:
             return stmt_list(self)
         return stmt_list_empty(self)
 
@@ -203,44 +201,43 @@ class Parser:
 
         @rule
         def stmt_expr(_parser):
-            return self._produce(self._expr, TokenType.SEMICOLON)
+            return self._produce(self._expr, T.SEMICOLON)
 
         @rule
         def stmt_break(_parser):
-            return self._produce(TokenType.BREAK, TokenType.SEMICOLON)
+            return self._produce(T.BREAK, T.SEMICOLON)
 
         @rule
         def stmt_continue(_parser):
-            return self._produce(TokenType.CONTINUE, TokenType.SEMICOLON)
+            return self._produce(T.CONTINUE, T.SEMICOLON)
 
         @rule
         def stmt_return(_parser):
-            return self._produce(TokenType.RETURN, self._fator,
-                                 TokenType.SEMICOLON)
+            return self._produce(T.RETURN, self._fator, T.SEMICOLON)
 
         @rule
         def stmt_null(_parser):
-            return self._produce(TokenType.SEMICOLON)
+            return self._produce(T.SEMICOLON)
 
-        if self.curr_token.id in Parser._for_stmt.first:
+        if self.curr_token.type_ in Parser._for_stmt.first:
             return stmt_for(self)
-        if self.curr_token.id in Parser._io_stmt.first:
+        if self.curr_token.type_ in Parser._io_stmt.first:
             return stmt_io(self)
-        if self.curr_token.id in Parser._while_stmt.first:
+        if self.curr_token.type_ in Parser._while_stmt.first:
             return stmt_while(self)
-        if self.curr_token.id in Parser._if_stmt.first:
+        if self.curr_token.type_ in Parser._if_stmt.first:
             return stmt_if(self)
-        if self.curr_token.id in Parser._bloco.first:
+        if self.curr_token.type_ in Parser._bloco.first:
             return stmt_bloco(self)
-        if self.curr_token.id in Parser._declaration.first:
+        if self.curr_token.type_ in Parser._declaration.first:
             return stmt_declaration(self)
-        if self.curr_token.id in Parser._expr.first:
+        if self.curr_token.type_ in Parser._expr.first:
             return stmt_expr(self)
-        if self.curr_token.id == TokenType.BREAK:
+        if self.curr_token.type_ == T.BREAK:
             return stmt_break(self)
-        if self.curr_token.id == TokenType.CONTINUE:
+        if self.curr_token.type_ == T.CONTINUE:
             return stmt_continue(self)
-        if self.curr_token.id == TokenType.RETURN:
+        if self.curr_token.type_ == T.RETURN:
             return stmt_return(self)
         return stmt_null(self)
 
@@ -248,8 +245,7 @@ class Parser:
     def _declaration(self):
         @rule
         def declaration(_parser):
-            result = self._produce(self._type, self._ident_list,
-                                   TokenType.SEMICOLON)
+            result = self._produce(self._type, self._ident_list, T.SEMICOLON)
             self._declare_variables(result)
             return result
         return declaration(self)
@@ -258,21 +254,20 @@ class Parser:
     def _ident_list(self):
         @rule
         def ident_list(_parser):
-            return self._produce(TokenType.IDENT, self._resto_ident_list)
+            return self._produce(T.IDENT, self._resto_ident_list)
         return ident_list(self)
 
     @rule_head
     def _resto_ident_list(self):
         @rule
         def resto_ident_list(_parser):
-            return self._produce(TokenType.COMMA, TokenType.IDENT,
-                                 self._resto_ident_list)
+            return self._produce(T.COMMA, T.IDENT, self._resto_ident_list)
 
         @rule
         def resto_ident_list_empty(_parser):
             return Result()
 
-        if self.curr_token.id == TokenType.COMMA:
+        if self.curr_token.type_ == T.COMMA:
             return resto_ident_list(self)
         return resto_ident_list_empty(self)
 
@@ -281,9 +276,8 @@ class Parser:
         @rule(new_scope=True)
         def for_stmt(_parser):
             return self._produce(
-                TokenType.FOR, TokenType.OPAR, self._opt_expr,
-                TokenType.SEMICOLON, self._opt_expr, TokenType.SEMICOLON,
-                self._opt_expr, TokenType.CPAR, self._stmt)
+                T.FOR, T.OPAR, self._opt_expr, T.SEMICOLON, self._opt_expr,
+                T.SEMICOLON, self._opt_expr, T.CPAR, self._stmt)
         return for_stmt(self)
 
     @rule_head
@@ -296,7 +290,7 @@ class Parser:
         def opt_expr_empty(_parser):
             return Result()
 
-        if self.curr_token.id in Parser._expr.first:
+        if self.curr_token.type_ in Parser._expr.first:
             return opt_expr(self)
         return opt_expr_empty(self)
 
@@ -304,17 +298,15 @@ class Parser:
     def _io_stmt(self):
         @rule
         def io_stmt_scan(_parser):
-            return self._produce(
-                TokenType.SCAN, TokenType.OPAR, TokenType.STR, TokenType.COMMA,
-                TokenType.IDENT, TokenType.CPAR, TokenType.SEMICOLON)
+            return self._produce(T.SCAN, T.OPAR, T.STR, T.COMMA, T.IDENT,
+                                 T.CPAR, T.SEMICOLON)
 
         @rule
         def io_stmt_print(_parser):
-            return self._produce(
-                TokenType.PRINT, TokenType.OPAR, self._out_list,
-                TokenType.CPAR, TokenType.SEMICOLON)
+            return self._produce(T.PRINT, T.OPAR, self._out_list, T.CPAR,
+                                 T.SEMICOLON)
 
-        if self.curr_token.id == TokenType.SCAN:
+        if self.curr_token.type_ == T.SCAN:
             return io_stmt_scan(self)
         return io_stmt_print(self)
 
@@ -329,22 +321,20 @@ class Parser:
     def _out(self):
         @rule
         def out(_parser):
-            return self._produce({TokenType.NUMINT, TokenType.NUMFLOAT,
-                                  TokenType.STR, TokenType.IDENT})
+            return self._produce({T.NUMINT, T.NUMFLOAT, T.STR, T.IDENT})
         return out(self)
 
     @rule_head
     def _resto_out_list(self):
         @rule
         def resto_out_list(_parser):
-            return self._produce(TokenType.COMMA, self._out,
-                                 self._resto_out_list)
+            return self._produce(T.COMMA, self._out, self._resto_out_list)
 
         @rule
         def resto_out_list_empty(_parser):
             return Result()
 
-        if self.curr_token.id == TokenType.COMMA:
+        if self.curr_token.type_ == T.COMMA:
             return resto_out_list(self)
         return resto_out_list_empty(self)
 
@@ -352,29 +342,29 @@ class Parser:
     def _while_stmt(self):
         @rule
         def while_stmt(_parser):
-            return self._produce(TokenType.WHILE, TokenType.OPAR, self._expr,
-                                 TokenType.CPAR, self._stmt)
+            return self._produce(T.WHILE, T.OPAR, self._expr, T.CPAR,
+                                 self._stmt)
         return while_stmt(self)
 
     @rule_head
     def _if_stmt(self):
         @rule
         def if_stmt(_parser):
-            return self._produce(TokenType.IF, TokenType.OPAR, self._expr,
-                                 TokenType.CPAR, self._stmt, self._else_part)
+            return self._produce(T.IF, T.OPAR, self._expr, T.CPAR, self._stmt,
+                                 self._else_part)
         return if_stmt(self)
 
     @rule_head
     def _else_part(self):
         @rule
         def else_part(_parser):
-            return self._produce(TokenType.ELSE, self._stmt)
+            return self._produce(T.ELSE, self._stmt)
 
         @rule
         def else_part_empty(_parser):
             return Result()
 
-        if self.curr_token.id == TokenType.ELSE:
+        if self.curr_token.type_ == T.ELSE:
             return else_part(self)
         return else_part_empty(self)
 
@@ -402,13 +392,13 @@ class Parser:
     def _resto_atrib(self):
         @rule(lvalue=True)
         def resto_atrib(_parser):
-            return self._produce(TokenType.ASSIGN, self._atrib)
+            return self._produce(T.ASSIGN, self._atrib)
 
         @rule(lvalue=False)
         def resto_atrib_empty(_parser):
             return Result()
 
-        if self.curr_token.id == TokenType.ASSIGN:
+        if self.curr_token.type_ == T.ASSIGN:
             return resto_atrib(self)
         return resto_atrib_empty(self)
 
@@ -423,13 +413,13 @@ class Parser:
     def _resto_or(self):
         @rule(lvalue=False)
         def resto_or(_parser):
-            return self._produce(TokenType.OR, self._and, self._resto_or)
+            return self._produce(T.OR, self._and, self._resto_or)
 
         @rule(lvalue=True)
         def resto_or_empty(_parser):
             return Result()
 
-        if self.curr_token.id == TokenType.OR:
+        if self.curr_token.type_ == T.OR:
             return resto_or(self)
         return resto_or_empty(self)
 
@@ -444,13 +434,13 @@ class Parser:
     def _resto_and(self):
         @rule(lvalue=False)
         def resto_and(_parser):
-            return self._produce(TokenType.AND, self._not, self._resto_and)
+            return self._produce(T.AND, self._not, self._resto_and)
 
         @rule(lvalue=True)
         def resto_and_empty(_parser):
             return Result()
 
-        if self.curr_token.id == TokenType.AND:
+        if self.curr_token.type_ == T.AND:
             return resto_and(self)
         return resto_and_empty(self)
 
@@ -458,13 +448,13 @@ class Parser:
     def _not(self):
         @rule(lvalue=False)
         def not_not(_parser):
-            return self._produce(TokenType.NOT, self._not)
+            return self._produce(T.NOT, self._not)
 
         @rule
         def not_rel(_parser):
             return self._produce(self._rel)
 
-        if self.curr_token.id == TokenType.NOT:
+        if self.curr_token.type_ == T.NOT:
             return not_not(self)
         return not_rel(self)
 
@@ -479,43 +469,43 @@ class Parser:
     def _resto_rel(self):
         @rule(lvalue=False)
         def resto_rel_eq(_parser):
-            return self._produce(TokenType.EQ, self._add)
+            return self._produce(T.EQ, self._add)
 
         @rule(lvalue=False)
         def resto_rel_neq(_parser):
-            return self._produce(TokenType.NEQ, self._add)
+            return self._produce(T.NEQ, self._add)
 
         @rule(lvalue=False)
         def resto_rel_gt(_parser):
-            return self._produce(TokenType.GT, self._add)
+            return self._produce(T.GT, self._add)
 
         @rule(lvalue=False)
         def resto_rel_geq(_parser):
-            return self._produce(TokenType.GEQ, self._add)
+            return self._produce(T.GEQ, self._add)
 
         @rule(lvalue=False)
         def resto_rel_lt(_parser):
-            return self._produce(TokenType.LT, self._add)
+            return self._produce(T.LT, self._add)
 
         @rule(lvalue=False)
         def resto_rel_leq(_parser):
-            return self._produce(TokenType.LEQ, self._add)
+            return self._produce(T.LEQ, self._add)
 
         @rule(lvalue=True)
         def resto_rel_empty(_parser):
             return Result()
 
-        if self.curr_token.id == TokenType.EQ:
+        if self.curr_token.type_ == T.EQ:
             return resto_rel_eq(self)
-        if self.curr_token.id == TokenType.NEQ:
+        if self.curr_token.type_ == T.NEQ:
             return resto_rel_neq(self)
-        if self.curr_token.id == TokenType.GT:
+        if self.curr_token.type_ == T.GT:
             return resto_rel_gt(self)
-        if self.curr_token.id == TokenType.GEQ:
+        if self.curr_token.type_ == T.GEQ:
             return resto_rel_geq(self)
-        if self.curr_token.id == TokenType.LT:
+        if self.curr_token.type_ == T.LT:
             return resto_rel_lt(self)
-        if self.curr_token.id == TokenType.LEQ:
+        if self.curr_token.type_ == T.LEQ:
             return resto_rel_leq(self)
         return resto_rel_empty(self)
 
@@ -533,19 +523,19 @@ class Parser:
 
         @rule(lvalue=False)
         def resto_add_plus(_parser):
-            return resto_add(self, TokenType.PLUS)
+            return resto_add(self, T.PLUS)
 
         @rule(lvalue=False)
         def resto_add_minus(_parser):
-            return resto_add(self, TokenType.MINUS)
+            return resto_add(self, T.MINUS)
 
         @rule(lvalue=True)
         def resto_add_empty(_parser):
             return Result()
 
-        if self.curr_token.id == TokenType.PLUS:
+        if self.curr_token.type_ == T.PLUS:
             return resto_add_plus(self)
-        if self.curr_token.id == TokenType.MINUS:
+        if self.curr_token.type_ == T.MINUS:
             return resto_add_minus(self)
         return resto_add_empty(self)
 
@@ -553,35 +543,38 @@ class Parser:
     def _mult(self):
         @rule
         def mult(_parser):
-            return self._produce(self._uno, self._resto_mult)
+            result = self._produce(self._uno, self._resto_mult)
+            if result.operator == '%' and result.type_ != T.INT:
+                self._error('% operands must be integer.')
+            return result
         return mult(self)
 
     @rule_head
     def _resto_mult(self):
-        def resto_mult(_parser, token_type):
-            return self._produce(token_type, self._uno, self._resto_mult)
-
         @rule(lvalue=False)
         def resto_mult_mult(_parser):
-            return resto_mult(self, TokenType.MULT)
+            return self._produce(T.MULT, self._uno, self._resto_mult)
 
         @rule(lvalue=False)
         def resto_mult_div(_parser):
-            return resto_mult(self, TokenType.DIV)
+            return self._produce(T.DIV, self._uno, self._resto_mult)
 
         @rule(lvalue=False)
         def resto_mult_mod(_parser):
-            return resto_mult(self, TokenType.MOD)
+            result = self._produce(T.MOD, self._uno, self._resto_mult)
+            if result.type_ != T.INT:
+                self._error('% operands must be integer.')
+            return result
 
         @rule(lvalue=True)
         def resto_mult_empty(_parser):
             return Result()
 
-        if self.curr_token.id == TokenType.MULT:
+        if self.curr_token.type_ == T.MULT:
             return resto_mult_mult(self)
-        if self.curr_token.id == TokenType.DIV:
+        if self.curr_token.type_ == T.DIV:
             return resto_mult_div(self)
-        if self.curr_token.id == TokenType.MOD:
+        if self.curr_token.type_ == T.MOD:
             return resto_mult_mod(self)
         return resto_mult_empty(self)
 
@@ -589,19 +582,19 @@ class Parser:
     def _uno(self):
         @rule(lvalue=False)
         def uno_plus(_parser):
-            return self._produce(TokenType.PLUS, self._uno)
+            return self._produce(T.PLUS, self._uno)
 
         @rule(lvalue=False)
         def uno_minus(_parser):
-            return self._produce(TokenType.MINUS, self._uno)
+            return self._produce(T.MINUS, self._uno)
 
         @rule
         def uno_fator(_parser):
             return self._produce(self._fator)
 
-        if self.curr_token.id == TokenType.PLUS:
+        if self.curr_token.type_ == T.PLUS:
             return uno_plus(self)
-        if self.curr_token.id == TokenType.MINUS:
+        if self.curr_token.type_ == T.MINUS:
             return uno_minus(self)
         return uno_fator(self)
 
@@ -609,41 +602,46 @@ class Parser:
     def _fator(self):
         @rule(lvalue=True)
         def fator_ident(_parser):
-            result = self._produce(TokenType.IDENT)
-            if result.value[0][0] not in self.symbol_table:
+            result = self._produce(T.IDENT)
+            if result.type_ is None:
                 self._error(f'Symbol {result.value[0][0]} not defined.')
             return result
 
         @rule(lvalue=False)
         def fator_num(_parser):
-            return self._produce({TokenType.NUMINT, TokenType.NUMFLOAT})
+            return self._produce({T.NUMINT, T.NUMFLOAT})
 
         @rule(lvalue=False)
         def fator_atrib(_parser):
-            return self._produce(TokenType.OPAR, self._atrib, TokenType.CPAR)
+            return self._produce(T.OPAR, self._atrib, T.CPAR)
 
-        if self.curr_token.id == TokenType.OPAR:
+        if self.curr_token.type_ == T.OPAR:
             return fator_atrib(self)
-        if self.curr_token.id == TokenType.IDENT:
+        if self.curr_token.type_ == T.IDENT:
             return fator_ident(self)
         return fator_num(self)
 
     def _consume(self, expected):
         is_collection = isinstance(expected, Collection)
-        found = self.curr_token.id
-        result = Result(lvalue=found == TokenType.IDENT)
+        found = self.curr_token.type_
+        result = Result(lvalue=found == T.IDENT)
         if (is_collection and found in expected) or found == expected:
-            if found == TokenType.EOF:
+            if found == T.EOF:
                 return result
-            if found in (TokenType.INT, TokenType.FLOAT):
-                result.type_ = found
-            value = self.curr_token.value
-            if found == TokenType.IDENT:
+
+            value = self.curr_token.typed_value
+            if found == T.IDENT:
+                result.type_ = self.symbol_table[value]
                 depth = self.symbol_table.depth_of(value,
                                                    self.symbol_table.depth)
                 result.value.append((value, depth))
-            elif value is not None:
-                result.value.append(value)
+            else:
+                result.type_ = self.curr_token.data_type
+                if value is not None:
+                    result.value.append(value)
+
+            result.operator = self.curr_token.operator
+
             self.tree.put_token(self.curr_token.name)
             self.curr_token = self.lexer.get_token()
         else:

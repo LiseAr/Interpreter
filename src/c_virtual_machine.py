@@ -84,7 +84,11 @@ class VirtualMachine:
         print(string, end='')
         self._last_line_empty = string.endswith('\n')
         if command == 'scan':
-            self._symbols[arg2] = float(input())
+            string = input()
+            try:
+                self._symbols[arg2] = int(string)
+            except ValueError:
+                self._symbols[arg2] = float(string)
 
     def _format(self, value: str):
         if not isinstance(value, str):
