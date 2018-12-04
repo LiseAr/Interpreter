@@ -11,7 +11,7 @@ FIRST = {
                   T.FLOAT},
     'stmt': {T.BREAK, T.CONTINUE, T.RETURN, T.SEMICOLON, T.FOR, T.WHILE, T.IF,
              T.SCAN, T.PRINT, T.OBRKT, T.NOT, T.PLUS, T.MINUS, T.NUMINT,
-             T.NUMFLOAT, T.IDENT, T.OPAR, T.INT, T.FLOAT},
+             T.NUMFLOAT, T.IDENT, T.OPAR},
     'ident_list': {T.IDENT},
     'resto_ident_list': {T.COMMA, None},
     'for_stmt': {T.FOR},

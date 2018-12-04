@@ -5,11 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Run",
+            "name": "Interpreter: Run ex.c",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/interpreter/c_interpreter.py",
             "args": ["tests/minic/ex.c"]
+        },
+        {
+            "name": "Interpreter: Run cafunfo.c",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/interpreter/c_interpreter.py",
+            "args": ["tests/minic/cafunfo.c", "100", "1"]
+        },
+        {
+            "name": "Interpreter: Run scope.c",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/interpreter/c_interpreter.py",
+            "args": ["tests/minic/scope.c"]
         },
         {
             "name": "Python: Current File (Integrated Terminal)",

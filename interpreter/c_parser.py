@@ -163,15 +163,21 @@ class Parser:
     @rule_head
     def _stmt_list(self):
         @rule
-        def stmt_list(_parser):
+        def stmt_list_stmt(_parser):
             return self._produce(self._stmt, self._stmt_list)
+
+        @rule
+        def stmt_list_declaration(_parser):
+            return self._produce(self._declaration, self._stmt_list)
 
         @rule
         def stmt_list_empty(_parser):
             return Result()
 
-        if self.curr_token.type_ in Parser._stmt_list.first:
-            return stmt_list(self)
+        if self.curr_token.type_ in Parser._stmt.first:
+            return stmt_list_stmt(self)
+        if self.curr_token.type_ in Parser._declaration.first:
+            return stmt_list_declaration(self)
         return stmt_list_empty(self)
 
     @rule_head
@@ -195,10 +201,6 @@ class Parser:
         @rule
         def stmt_bloco(_parser):
             return self._produce(self._bloco)
-
-        @rule
-        def stmt_declaration(_parser):
-            return self._produce(self._declaration)
 
         @rule
         def stmt_expr(_parser):
@@ -230,8 +232,6 @@ class Parser:
             return stmt_if(self)
         if self.curr_token.type_ in Parser._bloco.first:
             return stmt_bloco(self)
-        if self.curr_token.type_ in Parser._declaration.first:
-            return stmt_declaration(self)
         if self.curr_token.type_ in Parser._expr.first:
             return stmt_expr(self)
         if self.curr_token.type_ == T.BREAK:

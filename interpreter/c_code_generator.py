@@ -83,12 +83,16 @@ class CodeGenerator:
         """<bloco> -> '{' <stmtList> '}'"""
         return result
 
-    def stmt_list(self, result: Result) -> Result:
+    def stmt_list_stmt(self, result: Result) -> Result:
         """<stmtList> -> <stmt> <stmtList>"""
         stmt_list_code = result.code.pop()[0]
         code = result.code.pop()[0]
         code.extend(stmt_list_code)
         result.code.append((code, None))
+        return result
+
+    def stmt_list_declaration(self, result: Result) -> Result:
+        """<stmtList> -> <declaration> <stmtList>"""
         return result
 
     def stmt_list_empty(self, result: Result) -> Result:
@@ -138,11 +142,6 @@ class CodeGenerator:
         """<stmt> -> 'return' <fator> ';'"""
         code = [Instruction.jump(self._return_label)]
         result.code.append((code, None))
-        return result
-
-    def stmt_declaration(self, result: Result) -> Result:
-        """<stmt> -> <declaration>"""
-        result.code.append(([], None))
         return result
 
     def stmt_null(self, result: Result) -> Result:

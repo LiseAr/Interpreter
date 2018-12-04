@@ -40,6 +40,10 @@ class TestParser(unittest.TestCase):
         self.assertNotIn('7', result)
         self.assertIn('cafunfo', result)
 
+    def test_scope(self):
+        result = _run_code('scope.c')
+        self.assertEqual('a=5\na=3', result.strip('\n'))
+
 
 if __name__ == "__main__":
     unittest.main()
